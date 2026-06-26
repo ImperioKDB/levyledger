@@ -1,0 +1,274 @@
+use anchor_lang::prelude::*;
+use solana_program::pubkey;
+use anchor_spl::token::{Mint, Token, TokenAccount};
+
+declare_id!("DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW");
+
+pub const THRESHOLD: u8 = 3;
+pub const MAX_ACTIVE_PROPOSALS: u64 = 20;
+pub const PROPOSAL_EXPIRY_SECS: i64 = 7 * 24 * 60 * 60;
+pub const MAX_SLUG_LEN: usize = 20;
+pub const MAX_DESC_LEN: usize = 200;
+
+const ADMIN_KEY: Pubkey = pubkey!("4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N");
+
+#[program]
+pub mod levyledger {
+    use super::*;
+
+    pub fn init_treasury(
+        ctx: Context<InitTreasury>,
+        slug: String,
+        signers: [Pubkey; 5],
+    ) -> Result<()> {
+        require!(
+            slug.len() > 0 && slug.len() <= MAX_SLUG_LEN,
+            LevyError::InvalidSlug
+        );
+
+        let zero = Pubkey::default();
+        for i in 0..5 {
+            require!(signers[i] != zero, LevyError::InvalidSigners);
+            for j in (i + 1)..5 {
+                require!(signers[i] != signers[j], LevyError::InvalidSigners);
+            }
+        }
+
+        let treasury = &mut ctx.accounts.treasury;
+        treasury.university_slug = slug;
+        treasury.signers = signers;
+        treasury.threshold = THRESHOLD;
+        treasury.available_balance = 0;
+        treasury.reserved_balance = 0;
+        treasury.total_deposited = 0;
+        treasury.total_spent = 0;
+        treasury.proposal_count = 0;
+        treasury.bump = ctx.bumps.treasury;
+        treasury.vault_bump = ctx.bumps.vault;
+
+        Ok(())
+    }
+
+    pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn create_proposal(
+        ctx: Context<CreateProposal>,
+        amount: u64,
+        recipient: Pubkey,
+        category: ProposalCategory,
+        description: String,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn sign_proposal(ctx: Context<SignProposal>, approve: bool) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+#[instruction(slug: String)]
+pub struct InitTreasury<'info> {
+    #[account(
+        mut,
+        constraint = authority.key() == ADMIN_KEY @ LevyError::UnauthorizedAdmin
+    )]
+    pub authority: Signer<'info>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = TreasuryAccount::SPACE,
+        seeds = [b"treasury", slug.as_bytes()],
+        bump
+    )]
+    pub treasury: Account<'info, TreasuryAccount>,
+
+    #[account(
+        init,
+        payer = authority,
+        token::mint = usdc_mint,
+        token::authority = treasury,
+        seeds = [b"vault", treasury.key().as_ref()],
+        bump
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    pub usdc_mint: Account<'info, Mint>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct Deposit<'info> {
+    #[account(mut)]
+    pub depositor: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"treasury", treasury.university_slug.as_bytes()],
+        bump = treasury.bump
+    )]
+    pub treasury: Account<'info, TreasuryAccount>,
+
+    #[account(mut)]
+    pub depositor_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", treasury.key().as_ref()],
+        bump = treasury.vault_bump
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct CreateProposal<'info> {
+    #[account(mut)]
+    pub proposer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"treasury", treasury.university_slug.as_bytes()],
+        bump = treasury.bump
+    )]
+    pub treasury: Account<'info, TreasuryAccount>,
+
+    #[account(
+        init,
+        payer = proposer,
+        space = ProposalAccount::SPACE,
+        seeds = [
+            b"proposal",
+            treasury.key().as_ref(),
+            &treasury.proposal_count.to_le_bytes()
+        ],
+        bump
+    )]
+    pub proposal: Account<'info, ProposalAccount>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SignProposal<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"treasury", treasury.university_slug.as_bytes()],
+        bump = treasury.bump
+    )]
+    pub treasury: Account<'info, TreasuryAccount>,
+
+    #[account(
+        mut,
+        constraint = proposal.treasury == treasury.key() @ LevyError::UnauthorizedSigner
+    )]
+    pub proposal: Account<'info, ProposalAccount>,
+
+    #[account(
+        mut,
+        seeds = [b"vault", treasury.key().as_ref()],
+        bump = treasury.vault_bump
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub recipient_token_account: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[account]
+pub struct TreasuryAccount {
+    pub university_slug: String,
+    pub signers: [Pubkey; 5],
+    pub threshold: u8,
+    pub available_balance: u64,
+    pub reserved_balance: u64,
+    pub total_deposited: u64,
+    pub total_spent: u64,
+    pub proposal_count: u64,
+    pub bump: u8,
+    pub vault_bump: u8,
+}
+
+impl TreasuryAccount {
+    pub const SPACE: usize = 300;
+}
+
+#[account]
+pub struct ProposalAccount {
+    pub treasury: Pubkey,
+    pub proposer: Pubkey,
+    pub recipient: Pubkey,
+    pub amount: u64,
+    pub category: ProposalCategory,
+    pub description: String,
+    pub status: ProposalStatus,
+    pub signed_by: [bool; 5],
+    pub voted_against: [bool; 5],
+    pub signatures_for: u8,
+    pub signatures_against: u8,
+    pub proposal_index: u64,
+    pub created_at: i64,
+    pub expires_at: i64,
+    pub bump: u8,
+}
+
+impl ProposalAccount {
+    pub const SPACE: usize = 420;
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum ProposalStatus {
+    Active,
+    Executed,
+    Rejected,
+    Expired,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum ProposalCategory {
+    Welfare,
+    Events,
+    Logistics,
+    Equipment,
+    Other,
+}
+
+#[error_code]
+pub enum LevyError {
+    #[msg("Unauthorized: caller is not a registered exec signer")]
+    UnauthorizedSigner,
+    #[msg("Unauthorized: only the admin key can initialize a treasury")]
+    UnauthorizedAdmin,
+    #[msg("You have already voted for this proposal")]
+    AlreadySigned,
+    #[msg("You have already voted against this proposal")]
+    AlreadyVotedAgainst,
+    #[msg("Proposal is not in Active status")]
+    ProposalNotActive,
+    #[msg("Proposal has expired without reaching threshold")]
+    ProposalExpired,
+    #[msg("Insufficient available balance in vault for this proposal")]
+    InsufficientFunds,
+    #[msg("University slug must be 1-20 characters")]
+    InvalidSlug,
+    #[msg("Description must be 1-200 characters")]
+    InvalidDescription,
+    #[msg("Proposal amount must be greater than zero")]
+    AmountZero,
+    #[msg("Treasury has 20 active proposals — wait for one to resolve first")]
+    TooManyActiveProposals,
+    #[msg("All 5 signer pubkeys must be unique and non-zero")]
+    InvalidSigners,
+    #[msg("Arithmetic overflow")]
+    Overflow,
+}
