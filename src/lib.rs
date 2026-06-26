@@ -50,6 +50,33 @@ pub mod levyledger {
     }
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+        require!(amount > 0, LevyError::AmountZero);
+
+        let treasury = &ctx.accounts.treasury;
+        let depositor_key = ctx.accounts.depositor.key();
+        require!(
+            treasury.signers.contains(&depositor_key),
+            LevyError::UnauthorizedSigner
+        );
+
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            anchor_spl::token::Transfer {
+                from: ctx.accounts.depositor_token_account.to_account_info(),
+                to: ctx.accounts.vault.to_account_info(),
+                authority: ctx.accounts.depositor.to_account_info(),
+            },
+        );
+        anchor_spl::token::transfer(cpi_ctx, amount)?;
+
+        let treasury = &mut ctx.accounts.treasury;
+        treasury.available_balance = treasury.available_balance
+            .checked_add(amount)
+            .ok_or(LevyError::Overflow)?;
+        treasury.total_deposited = treasury.total_deposited
+            .checked_add(amount)
+            .ok_or(LevyError::Overflow)?;
+
         Ok(())
     }
 
