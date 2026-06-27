@@ -1,11 +1,15 @@
 import { Connection, PublicKey } from '@solana/web3.js'
-import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor'
+import { Program, AnchorProvider } from '@coral-xyz/anchor'
+import type { Idl } from '@coral-xyz/anchor'
 import idl from './idl/levyledger.json'
 
 const PROGRAM_ID = new PublicKey('DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW')
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
 
 export const connection = new Connection(RPC_URL, 'confirmed')
+
+// Cast through unknown to handle older Solana Playground IDL format
+const IDL = idl as unknown as Idl
 
 export function getReadonlyProgram() {
   const dummyWallet = {
@@ -14,11 +18,11 @@ export function getReadonlyProgram() {
     signAllTransactions: async (txs: any[]) => txs,
   }
   const provider = new AnchorProvider(connection, dummyWallet as any, { commitment: 'confirmed' })
-  return new Program(idl as Idl, provider)
+  return new Program(IDL, provider)
 }
 
 export function getProgram(provider: AnchorProvider) {
-  return new Program(idl as Idl, provider)
+  return new Program(IDL, provider)
 }
 
 export function getTreasuryPDA(slug: string): [PublicKey, number] {
@@ -46,7 +50,10 @@ export function getProposalPDA(treasuryPubkey: PublicKey, index: number): [Publi
 
 export function formatUSDC(amount: any): string {
   const val = typeof amount?.toNumber === 'function' ? amount.toNumber() : Number(amount)
-  return (val / 1_000_000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (val / 1_000_000).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function abbreviate(pubkey: string): string {
