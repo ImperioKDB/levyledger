@@ -20,9 +20,6 @@
   --pending:  #B8860B;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BORDER RADIUS NUCLEAR RESET
-   ═══════════════════════════════════════════════════════════════════════════ */
 *,
 *::before,
 *::after {
@@ -30,9 +27,6 @@
   border-radius: 0 !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BASE
-   ═══════════════════════════════════════════════════════════════════════════ */
 html {
   background-color: var(--ink);
   color: var(--ledger);
@@ -51,54 +45,38 @@ body {
   margin: 0;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   FOCUS
-   ═══════════════════════════════════════════════════════════════════════════ */
 :focus-visible {
   outline: 1px solid var(--nigerian);
   outline-offset: 2px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SELECTION
-   ═══════════════════════════════════════════════════════════════════════════ */
 ::selection {
   background-color: var(--nigerian);
   color: var(--ink);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SCROLLBAR
-   ═══════════════════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar        { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: var(--ink); }
 ::-webkit-scrollbar-thumb  { background: var(--rule); }
 ::-webkit-scrollbar-thumb:hover { background: var(--ghost); }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MOTION
-   ═══════════════════════════════════════════════════════════════════════════ */
 @keyframes page-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
-.page-enter {
-  animation: page-in 150ms ease-out both;
-}
+.page-enter { animation: page-in 150ms ease-out both; }
 
 @keyframes slot-sign {
   from { opacity: 0.3; }
   to   { opacity: 1; }
 }
+.slot-signed { animation: slot-sign 300ms ease-out both; }
 
-.slot-signed {
-  animation: slot-sign 300ms ease-out both;
-}
+/* ── No scrollbar — used on filter tabs strip ─────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   WALLET ADAPTER OVERRIDES
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Wallet adapter overrides ─────────────────────────────────────────────── */
 .wallet-adapter-button {
   font-family: var(--font-data), 'Space Mono', monospace !important;
   background: transparent !important;
@@ -109,42 +87,27 @@ body {
   letter-spacing: 0.05em !important;
   transition: border-color 150ms, color 150ms !important;
 }
-
 .wallet-adapter-button:hover {
   border-color: var(--nigerian) !important;
   color: var(--nigerian) !important;
   background: transparent !important;
 }
-
 .wallet-adapter-button:not([disabled]):hover {
   background: transparent !important;
 }
-
 .wallet-adapter-modal-wrapper {
   background: var(--paper) !important;
   border: 1px solid var(--rule) !important;
 }
-
 .wallet-adapter-modal-title {
   font-family: var(--font-display), 'Space Grotesk', sans-serif !important;
   color: var(--ledger) !important;
 }
+.wallet-adapter-modal-list li            { background: var(--lifted) !important; }
+.wallet-adapter-modal-list li:hover      { background: var(--rule)   !important; }
 
-.wallet-adapter-modal-list li {
-  background: var(--lifted) !important;
-}
-
-.wallet-adapter-modal-list li:hover {
-  background: var(--rule) !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   REDUCED MOTION
-   ═══════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
