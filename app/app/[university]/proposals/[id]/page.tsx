@@ -8,11 +8,21 @@ import { formatUSDC, abbreviate } from '@/lib/anchor'
 import { CATEGORY_LABELS } from '@/lib/constants'
 import StatusBadge from '@/components/StatusBadge'
 
+// FIX: handle Anchor BN objects — same pattern as formatUSDC in anchor.ts.
+// BN objects have a .toNumber() method; plain numbers do not.
+function fmtTimestamp(ts: any): string {
+  const seconds = typeof ts?.toNumber === 'function' ? ts.toNumber() : Number(ts)
+  if (isNaN(seconds)) return '—'
+  return new Date(seconds * 1000).toLocaleDateString('en-NG', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  })
+}
+
 export default function ProposalPage() {
   const { university, id } = useParams() as { university: string; id: string }
   const [proposal, setProposal] = useState<any>(null)
   const [treasury, setTreasury] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     async function load() {
@@ -27,77 +37,93 @@ export default function ProposalPage() {
   }, [university, id])
 
   if (loading) return (
-    <main className="min-h-screen bg-base px-6 pt-12">
-      <p className="font-mono text-muted text-sm">Loading...</p>
+    <main className="min-h-screen bg-ink px-6 pt-12">
+      <p className="font-data text-ghost text-sm">Loading...</p>
     </main>
   )
 
   if (!proposal) return (
-    <main className="min-h-screen bg-base px-6 pt-12">
-      <Link href={`/${university}`} className="font-mono text-muted text-xs">← Back</Link>
-      <p className="font-grotesk text-2xl font-bold text-primary mt-8">Proposal not found</p>
+    <main className="min-h-screen bg-ink px-6 pt-12">
+      <Link href={`/${university}`} className="font-data text-ghost text-xs">← Back</Link>
+      <p className="font-display text-2xl font-bold text-ledger mt-8">
+        Proposal not found
+      </p>
     </main>
   )
 
-  const status = Object.keys(proposal.status)[0] as string
+  const status   = Object.keys(proposal.status)[0] as string
   const category = Object.keys(proposal.category)[0] as string
-  const signers = treasury?.signers || []
-  const fmt = (ts: any) => new Date(Number(ts) * 1000).toLocaleDateString('en-NG', {
-    day: 'numeric', month: 'long', year: 'numeric'
-  })
+  const signers  = treasury?.signers || []
 
   return (
-    <main className="min-h-screen bg-base">
-      <header className="border-b border-border px-6 py-4">
-        <Link href={`/${university}`} className="font-mono text-muted text-xs">
+    <main className="min-h-screen bg-ink">
+      <header className="border-b border-rule px-6 py-4">
+        <Link href={`/${university}`} className="font-data text-ghost text-xs">
           ← {university.toUpperCase()} Treasury
         </Link>
       </header>
 
-      <section className="px-6 pt-8 pb-6 border-b border-border">
-        <p className="font-mono text-muted text-xs mb-4">Proposal #{id}</p>
-        <p className="font-mono text-5xl font-bold text-primary mb-2">
+      {/* ── Amount hero ─────────────────────────────────────────────────── */}
+      <section className="px-6 pt-8 pb-6 border-b border-rule">
+        <p className="font-data text-ghost text-xs mb-4">Proposal #{id}</p>
+        <p className="font-data text-5xl font-bold text-ledger mb-2">
           ${formatUSDC(proposal.amount)}
         </p>
-        <p className="font-mono text-muted text-sm mb-5">USDC</p>
+        <p className="font-data text-ghost text-sm mb-5">USDC</p>
         <StatusBadge status={status} />
       </section>
 
-      <section className="px-6 py-6 border-b border-border space-y-5">
+      {/* ── Metadata ────────────────────────────────────────────────────── */}
+      <section className="px-6 py-6 border-b border-rule space-y-5">
         <div>
-          <p className="font-mono text-muted text-xs mb-1">Description</p>
-          <p className="text-primary text-sm leading-relaxed">{proposal.description}</p>
+          <p className="font-data text-ghost text-xs mb-1">Description</p>
+          <p className="text-ledger text-sm leading-relaxed">{proposal.description}</p>
         </div>
         <div>
-          <p className="font-mono text-muted text-xs mb-1">Category</p>
-          <p className="font-mono text-primary text-sm">{CATEGORY_LABELS[category] || category}</p>
+          <p className="font-data text-ghost text-xs mb-1">Category</p>
+          <p className="font-data text-ledger text-sm">
+            {CATEGORY_LABELS[category] || category}
+          </p>
         </div>
         <div>
-          <p className="font-mono text-muted text-xs mb-1">Recipient</p>
-          <p className="font-mono text-primary text-xs break-all">{proposal.recipient?.toString()}</p>
+          <p className="font-data text-ghost text-xs mb-1">Recipient</p>
+          <p className="font-data text-ledger text-xs break-all">
+            {proposal.recipient?.toString()}
+          </p>
         </div>
         <div>
-          <p className="font-mono text-muted text-xs mb-1">Proposed by</p>
-          <p className="font-mono text-primary text-sm">{abbreviate(proposal.proposer?.toString())}</p>
+          <p className="font-data text-ghost text-xs mb-1">Proposed by</p>
+          <p className="font-data text-ledger text-sm">
+            {abbreviate(proposal.proposer?.toString())}
+          </p>
         </div>
       </section>
 
-      <section className="px-6 py-6 border-b border-border">
-        <p className="font-mono text-muted text-xs mb-5">
+      {/* ── Signature tracker ───────────────────────────────────────────── */}
+      <section className="px-6 py-6 border-b border-rule">
+        <p className="font-data text-ghost text-xs mb-5">
           Signatures — {proposal.signaturesFor}/{treasury?.threshold || 3} required to execute
         </p>
         <div className="space-y-4">
           {signers.map((signer: any, i: number) => {
-            const votedFor = proposal.signedBy?.[i]
+            const votedFor     = proposal.signedBy?.[i]
             const votedAgainst = proposal.votedAgainst?.[i]
             return (
               <div key={i} className="flex items-center gap-4">
-                <span className={`font-mono text-sm w-4 ${votedFor ? 'text-accent' : votedAgainst ? 'text-danger' : 'text-border'}`}>
-                  {votedFor ? '✓' : votedAgainst ? '✗' : '○'}
+                <span className={`font-data text-base w-4 leading-none ${
+                  votedFor ? 'text-nigerian' : votedAgainst ? 'text-void' : 'text-ghost'
+                }`}>
+                  {votedFor ? '●' : votedAgainst ? '✗' : '○'}
                 </span>
-                <span className="font-mono text-xs text-muted flex-1">{abbreviate(signer.toString())}</span>
-                <span className={`font-mono text-xs ${votedFor ? 'text-accent' : votedAgainst ? 'text-danger' : 'text-muted'}`}>
-                  {votedFor ? 'APPROVED' : votedAgainst ? 'REJECTED' : 'PENDING'}
+                <span className={`font-data text-xs flex-1 ${
+                  votedFor ? 'text-nigerian slot-signed' : 'text-ghost'
+                }`}>
+                  {abbreviate(signer.toString())}
+                </span>
+                <span className={`font-data text-xs ${
+                  votedFor ? 'text-nigerian' : votedAgainst ? 'text-void' : 'text-ghost'
+                }`}>
+                  {votedFor ? 'SIGNED' : votedAgainst ? 'REJECTED' : 'PENDING'}
                 </span>
               </div>
             )
@@ -105,16 +131,23 @@ export default function ProposalPage() {
         </div>
       </section>
 
+      {/* ── Timeline ────────────────────────────────────────────────────── */}
       <section className="px-6 py-6">
-        <p className="font-mono text-muted text-xs mb-4">Timeline</p>
+        <p className="font-data text-ghost text-xs mb-4">Timeline</p>
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="font-mono text-xs text-muted">Created</span>
-            <span className="font-mono text-xs text-primary">{fmt(proposal.createdAt)}</span>
+            <span className="font-data text-xs text-ghost">Created</span>
+            <span className="font-data text-xs text-ledger">
+              {fmtTimestamp(proposal.createdAt)}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span className="font-mono text-xs text-muted">{status === 'expired' ? 'Expired' : 'Expires'}</span>
-            <span className="font-mono text-xs text-primary">{fmt(proposal.expiresAt)}</span>
+            <span className="font-data text-xs text-ghost">
+              {status === 'expired' ? 'Expired' : 'Expires'}
+            </span>
+            <span className="font-data text-xs text-ledger">
+              {fmtTimestamp(proposal.expiresAt)}
+            </span>
           </div>
         </div>
       </section>
