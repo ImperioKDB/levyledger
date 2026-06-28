@@ -36,7 +36,7 @@ export default function Home() {
       {/* LiveHero fetches on-chain balance. Shows "Not yet initialized"     */}
       {/* until initTreasury is called from the admin panel. That's correct. */}
       <section className="border-b border-rule">
-        <LiveHero slug="uniben" />
+        <LiveHero />
       </section>
 
       {/* ── Treasury navigation — always present ─────────────────────────── */}
