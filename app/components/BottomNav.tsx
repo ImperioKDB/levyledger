@@ -10,14 +10,31 @@ interface Props {
 export default function BottomNav({ university }: Props) {
   const pathname = usePathname()
 
-  const isOverview   = pathname === `/${university}`
-  const isProposals  = pathname.includes('/proposals')
+  // A proposal detail page lives at /${university}/proposals/${id}
+  // The treasury overview lives at /${university}
+  // The admin panel lives at /admin
+  const isOnTreasury = pathname === `/${university}`
+  const isOnProposal = pathname.startsWith(`/${university}/proposals/`)
   const isAdmin      = pathname.startsWith('/admin')
 
   const tabs = [
-    { label: 'Overview',  href: `/${university}`,                  active: isOverview  },
-    { label: 'Proposals', href: `/${university}?filter=all`,        active: isProposals },
-    { label: 'Admin',     href: `/admin?treasury=${university}`,   active: isAdmin     },
+    {
+      label:  'OVERVIEW',
+      href:   `/${university}`,
+      active: isOnTreasury && !isOnProposal,
+    },
+    {
+      label:  'PROPOSALS',
+      // Scrolls to the proposals section — handled client-side via
+      // the filter strip on the treasury page
+      href:   `/${university}#proposals`,
+      active: isOnProposal,
+    },
+    {
+      label:  'ADMIN',
+      href:   `/admin?treasury=${university}`,
+      active: isAdmin,
+    },
   ]
 
   return (
@@ -32,12 +49,12 @@ export default function BottomNav({ university }: Props) {
             href={tab.href}
             className={`flex-1 flex flex-col items-center py-3 transition-colors ${
               tab.active
-                ? 'text-nigerian border-t border-nigerian -mt-px'
+                ? 'text-nigerian border-t-2 border-nigerian -mt-px'
                 : 'text-ghost hover:text-body'
             }`}
           >
             <span className="font-data text-xs tracking-widest">
-              {tab.label.toUpperCase()}
+              {tab.label}
             </span>
           </Link>
         ))}
