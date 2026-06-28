@@ -2,20 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   LEVYLEDGER — TOKEN SYSTEM
-   Design thesis: LevyLedger looks like evidence.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 :root {
   --ink:      #0D0D0D;
   --paper:    #141414;
   --lifted:   #1C1C1C;
   --rule:     #2A2A2A;
-  --ghost:    #666666;
+  --ghost:    #888888;   /* FIX: was #666666 — failed 4.5:1 contrast */
   --body:     #C8C8C8;
   --ledger:   #F0F0F0;
-  --nigerian: #008751;
+  --uniben:   #9966FF;   /* UNIBEN purple — primary accent, 5.7:1 on --ink */
+  --nigerian: #008751;   /* Nigerian green — EXECUTED status only */
   --void:     #C0392B;
   --pending:  #B8860B;
 }
@@ -46,12 +42,12 @@ body {
 }
 
 :focus-visible {
-  outline: 1px solid var(--nigerian);
+  outline: 1px solid var(--uniben);
   outline-offset: 2px;
 }
 
 ::selection {
-  background-color: var(--nigerian);
+  background-color: var(--uniben);
   color: var(--ink);
 }
 
@@ -72,11 +68,9 @@ body {
 }
 .slot-signed { animation: slot-sign 300ms ease-out both; }
 
-/* ── No scrollbar — used on filter tabs strip ─────────────────────────────── */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Wallet adapter overrides ─────────────────────────────────────────────── */
 .wallet-adapter-button {
   font-family: var(--font-data), 'Space Mono', monospace !important;
   background: transparent !important;
@@ -88,8 +82,8 @@ body {
   transition: border-color 150ms, color 150ms !important;
 }
 .wallet-adapter-button:hover {
-  border-color: var(--nigerian) !important;
-  color: var(--nigerian) !important;
+  border-color: var(--uniben) !important;
+  color: var(--uniben) !important;
   background: transparent !important;
 }
 .wallet-adapter-button:not([disabled]):hover {
