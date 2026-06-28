@@ -10,10 +10,10 @@ export const CATEGORY_LABELS: Record<string, string> = {
   other:     'Other',
 }
 
-// These values are used as dynamic strings in StatusBadge and ProposalCard.
-// They are safelisted in tailwind.config.ts so Tailwind never purges them.
+// executed stays green — universal semantic: green = approved = done
+// active uses uniben purple — on-brand for UNIBEN students
 export const STATUS_COLORS: Record<string, string> = {
-  active:   'text-pending  border-pending',
+  active:   'text-uniben   border-uniben',
   executed: 'text-nigerian border-nigerian',
   rejected: 'text-void     border-void',
   expired:  'text-ghost    border-ghost',
