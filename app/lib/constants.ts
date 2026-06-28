@@ -1,6 +1,6 @@
-export const PROGRAM_ID = 'DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW'
+export const PROGRAM_ID       = 'DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW'
 export const DEVNET_USDC_MINT = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'
-export const ADMIN_KEY = '4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N'
+export const ADMIN_KEY        = '4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N'
 
 export const CATEGORY_LABELS: Record<string, string> = {
   welfare:   'Welfare',
@@ -10,11 +10,13 @@ export const CATEGORY_LABELS: Record<string, string> = {
   other:     'Other',
 }
 
+// These values are used as dynamic strings in StatusBadge and ProposalCard.
+// They are safelisted in tailwind.config.ts so Tailwind never purges them.
 export const STATUS_COLORS: Record<string, string> = {
-  active:   'text-yellow-500 border-yellow-500',
-  executed: 'text-accent border-accent',
-  rejected: 'text-danger border-danger',
-  expired:  'text-muted border-muted',
+  active:   'text-pending  border-pending',
+  executed: 'text-nigerian border-nigerian',
+  rejected: 'text-void     border-void',
+  expired:  'text-ghost    border-ghost',
 }
 
 export const UNIVERSITIES: Record<string, string> = {
