@@ -15,18 +15,15 @@ const FILTERS: Filter[] = ['All', 'Active', 'Executed', 'Rejected', 'Expired']
 
 export default function TreasuryPage() {
   const { university } = useParams() as { university: string }
-
-  const [treasury,   setTreasury]   = useState<any>(null)
-  const [proposals,  setProposals]  = useState<any[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [filter,     setFilter]     = useState<Filter>('All')
-  const [notFound,   setNotFound]   = useState(false)
-  const [scrolled,   setScrolled]   = useState(false)
-
-  const statsRef  = useRef<HTMLDivElement>(null)
+  const [treasury,  setTreasury]  = useState<any>(null)
+  const [proposals, setProposals] = useState<any[]>([])
+  const [loading,   setLoading]   = useState(true)
+  const [filter,    setFilter]    = useState<Filter>('All')
+  const [notFound,  setNotFound]  = useState(false)
+  const [scrolled,  setScrolled]  = useState(false)
+  const statsRef    = useRef<HTMLDivElement>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // ── Sticky header: watch when stats section leaves viewport ──────────────
   useEffect(() => {
     const el = statsRef.current
     if (!el) return
@@ -36,21 +33,18 @@ export default function TreasuryPage() {
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [treasury]) // re-attach once treasury loads and statsRef populates
+  }, [treasury])
 
-  // ── Data loading + polling ────────────────────────────────────────────────
   async function load() {
     const t = await fetchTreasury(university)
     if (!t) {
-      setNotFound(true)
-      setLoading(false)
+      setNotFound(true); setLoading(false)
       if (intervalRef.current) clearInterval(intervalRef.current)
       return
     }
     setTreasury(t)
     const count = typeof t.proposalCount?.toNumber === 'function'
-      ? t.proposalCount.toNumber()
-      : Number(t.proposalCount)
+      ? t.proposalCount.toNumber() : Number(t.proposalCount)
     const p = await fetchAllProposals(t.pda, count)
     setProposals(p)
     setLoading(false)
@@ -59,19 +53,16 @@ export default function TreasuryPage() {
   useEffect(() => {
     load()
     intervalRef.current = setInterval(load, 15000)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [university])
 
-  // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) return (
     <main className="min-h-screen bg-ink">
       <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
         <Link href="/" className="font-data text-ghost text-xs">← LEVYLEDGER</Link>
       </header>
-      <div className="px-6 pt-8 space-y-4">
-        {[1, 2, 3, 4].map(i => (
+      <div className="px-6 pt-8 space-y-6">
+        {[1,2,3,4].map(i => (
           <div key={i} className="animate-pulse">
             <div className="h-3 bg-paper w-20 mb-2" />
             <div className="h-8 bg-paper w-36" />
@@ -81,7 +72,6 @@ export default function TreasuryPage() {
     </main>
   )
 
-  // ── Not found state ───────────────────────────────────────────────────────
   if (notFound) return (
     <main className="min-h-screen bg-ink">
       <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
@@ -94,33 +84,26 @@ export default function TreasuryPage() {
         <h1 className="font-display text-2xl font-bold text-ledger mb-3">
           Treasury not found
         </h1>
-        <p className="text-ghost text-sm max-w-xs leading-relaxed">
+        <p className="text-body text-sm max-w-xs leading-relaxed">
           No on-chain treasury exists for "{university}" yet.
-          Once initialized, the full ledger will appear here.
         </p>
       </div>
     </main>
   )
 
-  // ── Filter proposals ──────────────────────────────────────────────────────
   const filtered = filter === 'All'
     ? proposals
     : proposals.filter(
         p => Object.keys(p.status)[0].toLowerCase() === filter.toLowerCase()
       )
 
-  const uniName = UNIVERSITIES[university] || university
-
   return (
     <main className="min-h-screen bg-ink">
-
-      {/* ── Sticky header ───────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-ink border-b border-rule">
         <div className="px-6 py-4 flex items-center justify-between">
           <Link href="/" className="font-data text-ghost text-xs shrink-0">
             ← LEVYLEDGER
           </Link>
-          {/* Compact balance — fades in once stats section scrolls out of view */}
           <div className={`transition-opacity duration-200 ${
             scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}>
@@ -134,17 +117,15 @@ export default function TreasuryPage() {
         </div>
       </header>
 
-      {/* ── Treasury name ───────────────────────────────────────────────── */}
       <section className="px-6 pt-8 pb-6 border-b border-rule">
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
           {university.toUpperCase()} Student Union
         </p>
         <h1 className="font-display text-2xl font-bold text-ledger">
-          {uniName} Treasury
+          {UNIVERSITIES[university] || university} Treasury
         </h1>
       </section>
 
-      {/* ── Stats — IntersectionObserver watches this ────────────────────── */}
       <div ref={statsRef}>
         <TreasuryStats
           availableBalance={treasury.availableBalance}
@@ -153,7 +134,6 @@ export default function TreasuryPage() {
         />
       </div>
 
-      {/* ── Filter tabs ─────────────────────────────────────────────────── */}
       <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
         {FILTERS.map(f => (
           <button
@@ -161,7 +141,7 @@ export default function TreasuryPage() {
             onClick={() => setFilter(f)}
             className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
               filter === f
-                ? 'border-nigerian text-nigerian bg-ink'
+                ? 'border-uniben text-uniben'
                 : 'border-rule text-ghost hover:border-ghost'
             }`}
           >
@@ -170,7 +150,6 @@ export default function TreasuryPage() {
         ))}
       </section>
 
-      {/* ── Proposal list ───────────────────────────────────────────────── */}
       <section className="px-6 pt-2 pb-28">
         {filtered.length === 0 ? (
           <EmptyState filter={filter} university={university} />
@@ -186,9 +165,7 @@ export default function TreasuryPage() {
         )}
       </section>
 
-      {/* ── Bottom nav ──────────────────────────────────────────────────── */}
       <BottomNav university={university} />
-
     </main>
   )
 }
