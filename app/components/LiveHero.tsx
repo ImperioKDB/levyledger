@@ -20,7 +20,7 @@ function BalanceSkeleton() {
 function ProposalRowSkeleton() {
   return (
     <div className="border-b border-rule py-4 animate-pulse flex justify-between items-center">
-      <div className="space-y-2">
+      <div className="space-y-2 flex-1">
         <div className="h-4 bg-paper w-24" />
         <div className="h-3 bg-paper w-40" />
       </div>
@@ -30,9 +30,9 @@ function ProposalRowSkeleton() {
 }
 
 export default function LiveHero() {
-  const [treasury,  setTreasury]  = useState<any>(null)
-  const [proposals, setProposals] = useState<any[]>([])
-  const [loading,   setLoading]   = useState(true)
+  const [treasury,   setTreasury]   = useState<any>(null)
+  const [proposals,  setProposals]  = useState<any[]>([])
+  const [loading,    setLoading]    = useState(true)
   const [noTreasury, setNoTreasury] = useState(false)
 
   async function load() {
@@ -40,8 +40,7 @@ export default function LiveHero() {
     if (!t) { setNoTreasury(true); setLoading(false); return }
     setTreasury(t)
     const count = typeof t.proposalCount?.toNumber === 'function'
-      ? t.proposalCount.toNumber()
-      : Number(t.proposalCount)
+      ? t.proposalCount.toNumber() : Number(t.proposalCount)
     const all = await fetchAllProposals(t.pda, count)
     setProposals(all.slice(0, 3))
     setLoading(false)
@@ -53,7 +52,6 @@ export default function LiveHero() {
     return () => clearInterval(iv)
   }, [])
 
-  // Treasury not yet initialized — show a coming soon state
   if (noTreasury) return (
     <div className="border border-rule p-6">
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-3">
@@ -62,7 +60,7 @@ export default function LiveHero() {
       <p className="font-data text-4xl font-bold text-ledger mb-2">
         Not yet initialized
       </p>
-      <p className="text-ghost text-sm">
+      <p className="text-body text-sm">
         The UNIBEN treasury has not been deployed on-chain yet.
       </p>
     </div>
@@ -70,37 +68,33 @@ export default function LiveHero() {
 
   return (
     <div>
-      {/* ── Live balance ────────────────────────────────────────────────── */}
       <div className="mb-8">
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">
           UNIBEN Student Union · Live Balance
         </p>
-        {loading ? (
-          <BalanceSkeleton />
-        ) : (
+        {loading ? <BalanceSkeleton /> : (
           <>
-            <p className="font-data text-6xl font-bold text-ledger leading-none mb-2">
+            {/* Balance — largest element, UNIBEN purple */}
+            <p className="font-data text-6xl font-bold text-uniben leading-none mb-2">
               ${formatUSDC(treasury.availableBalance)}
             </p>
-            <p className="font-data text-ghost text-sm">
-              USDC · Available in vault
-            </p>
-            <div className="flex gap-6 mt-4">
+            <p className="font-data text-ghost text-sm mb-5">USDC · Available in vault</p>
+            <div className="flex gap-6">
               <div>
                 <p className="font-data text-ghost text-xs mb-1">Total In</p>
-                <p className="font-data text-body text-sm">
+                <p className="font-data text-body text-sm font-bold">
                   ${formatUSDC(treasury.totalDeposited)}
                 </p>
               </div>
               <div>
                 <p className="font-data text-ghost text-xs mb-1">Total Out</p>
-                <p className="font-data text-body text-sm">
+                <p className="font-data text-body text-sm font-bold">
                   ${formatUSDC(treasury.totalSpent)}
                 </p>
               </div>
               <div>
                 <p className="font-data text-ghost text-xs mb-1">Proposals</p>
-                <p className="font-data text-body text-sm">
+                <p className="font-data text-body text-sm font-bold">
                   {typeof treasury.proposalCount?.toNumber === 'function'
                     ? treasury.proposalCount.toNumber()
                     : Number(treasury.proposalCount)}
@@ -111,17 +105,12 @@ export default function LiveHero() {
         )}
       </div>
 
-      {/* ── Recent activity ─────────────────────────────────────────────── */}
       <div>
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-3">
           Recent Activity
         </p>
         {loading ? (
-          <>
-            <ProposalRowSkeleton />
-            <ProposalRowSkeleton />
-            <ProposalRowSkeleton />
-          </>
+          <><ProposalRowSkeleton /><ProposalRowSkeleton /><ProposalRowSkeleton /></>
         ) : proposals.length === 0 ? (
           <p className="font-data text-ghost text-sm py-4 border-t border-rule">
             No proposals yet.
@@ -130,7 +119,6 @@ export default function LiveHero() {
           proposals.map(p => {
             const status = Object.keys(p.status)[0] as string
             const colorClass = STATUS_COLORS[status.toLowerCase()] || 'text-ghost'
-            // Only take the text color from the pair
             const textColor = colorClass.split(' ')[0]
             return (
               <Link key={p.index} href={`/uniben/proposals/${p.index}`}>
@@ -154,7 +142,7 @@ export default function LiveHero() {
         )}
         <Link
           href="/uniben"
-          className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1 block hover:text-nigerian transition-colors"
+          className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1 block hover:text-uniben transition-colors"
         >
           View full treasury →
         </Link>
