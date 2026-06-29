@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use solana_program::pubkey;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-declare_id!("DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW");
+declare_id!("4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9");
 
 pub const THRESHOLD: u8 = 3;
 pub const MAX_ACTIVE_PROPOSALS: u64 = 20;
