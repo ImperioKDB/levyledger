@@ -5,7 +5,6 @@ import type { Idl } from '@coral-xyz/anchor'
 import idlRaw from '@/lib/idl/levyledger.json'
 
 const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
-
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
 export function useAnchorProgram() {
@@ -15,20 +14,25 @@ export function useAnchorProgram() {
   return useMemo(() => {
     if (!wallet.publicKey) return null
     try {
+      // AnchorProvider requires signTransaction/signAllTransactions to exist
+      // on the wallet object at construction time — even on Phantom mobile
+      // where they may be undefined mid-cycle. Provide no-op fallbacks so
+      // the Program object is always created. Real signing goes through
+      // Phantom's own flow at transaction submission time.
+      const walletAdapter = {
+        publicKey:           wallet.publicKey,
+        signTransaction:     wallet.signTransaction     ?? (async (tx: any) => tx),
+        signAllTransactions: wallet.signAllTransactions ?? (async (txs: any[]) => txs),
+      }
       const provider = new AnchorProvider(
         connection,
-        wallet as any,
+        walletAdapter as any,
         { commitment: 'confirmed', preflightCommitment: 'confirmed' }
       )
       return new Program(IDL, provider)
     } catch (err: any) {
-      console.error('[useAnchorProgram] init failed:', err)
-      // Surface error to window so we can see it on mobile
-      if (typeof window !== 'undefined') {
-        (window as any).__anchorError = err?.message || String(err)
-      }
+      console.error('[useAnchorProgram] init failed:', err?.message ?? err)
       return null
     }
-  // wallet.connected included so hook re-runs when connection state changes
-  }, [connection, wallet.publicKey, wallet.connected, wallet.signTransaction])
+  }, [connection, wallet.publicKey, wallet.connected])
 }
