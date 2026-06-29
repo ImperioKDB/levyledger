@@ -6,9 +6,6 @@ import idlRaw from '@/lib/idl/levyledger.json'
 
 const PROGRAM_ID_STR = 'DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW'
 
-// FIX: inject address field — Anchor 0.30 reads idl.address in the constructor.
-// Solana Playground IDL is older format without this field.
-// Without injection: new PublicKey(undefined) throws → crashes the page.
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
 export function useAnchorProgram() {
@@ -16,7 +13,10 @@ export function useAnchorProgram() {
   const wallet         = useWallet()
 
   return useMemo(() => {
-    if (!wallet.publicKey || !wallet.signTransaction) return null
+    // FIX: only check publicKey, not signTransaction.
+    // On Phantom mobile browser, signTransaction may be undefined mid-cycle
+    // even though the wallet is fully connected and has a publicKey.
+    if (!wallet.publicKey) return null
     try {
       const provider = new AnchorProvider(
         connection,
@@ -25,9 +25,9 @@ export function useAnchorProgram() {
       )
       return new Program(IDL, provider)
     } catch (err) {
-      // Defensive: log and return null rather than crashing the page
-      console.error('[useAnchorProgram] Failed to initialize:', err)
+      console.error('[useAnchorProgram] init failed:', err)
       return null
     }
-  }, [connection, wallet.publicKey, wallet.signTransaction])
+  // wallet.connected included so hook re-runs when connection state changes
+  }, [connection, wallet.publicKey, wallet.connected])
 }
