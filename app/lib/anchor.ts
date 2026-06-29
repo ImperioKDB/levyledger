@@ -3,7 +3,7 @@ import { Program, AnchorProvider } from '@coral-xyz/anchor'
 import type { Idl } from '@coral-xyz/anchor'
 import idlRaw from './idl/levyledger.json'
 
-const PROGRAM_ID_STR = 'DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW'
+const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
 const PROGRAM_ID     = new PublicKey(PROGRAM_ID_STR)
 const RPC_URL        = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
 
