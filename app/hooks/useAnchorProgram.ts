@@ -7,18 +7,18 @@ import idlRaw from '@/lib/idl/levyledger.json'
 const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
-export function useAnchorProgram() {
+export type AnchorProgramResult = {
+  program: Program<Idl> | null
+  anchorError: string
+}
+
+export function useAnchorProgram(): AnchorProgramResult {
   const { connection } = useConnection()
   const wallet         = useWallet()
 
   return useMemo(() => {
-    if (!wallet.publicKey) return null
+    if (!wallet.publicKey) return { program: null, anchorError: '' }
     try {
-      // AnchorProvider requires signTransaction/signAllTransactions to exist
-      // on the wallet object at construction time — even on Phantom mobile
-      // where they may be undefined mid-cycle. Provide no-op fallbacks so
-      // the Program object is always created. Real signing goes through
-      // Phantom's own flow at transaction submission time.
       const walletAdapter = {
         publicKey:           wallet.publicKey,
         signTransaction:     wallet.signTransaction     ?? (async (tx: any) => tx),
@@ -29,10 +29,11 @@ export function useAnchorProgram() {
         walletAdapter as any,
         { commitment: 'confirmed', preflightCommitment: 'confirmed' }
       )
-      return new Program(IDL, provider)
+      return { program: new Program(IDL, provider), anchorError: '' }
     } catch (err: any) {
-      console.error('[useAnchorProgram] init failed:', err?.message ?? err)
-      return null
+      const msg = err?.message ?? String(err)
+      console.error('[useAnchorProgram]', msg)
+      return { program: null, anchorError: msg }
     }
   }, [connection, wallet.publicKey, wallet.connected])
 }
