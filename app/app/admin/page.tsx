@@ -27,11 +27,8 @@ function TxResult({ state, sig, error }: { state: TxState; sig: string; error: s
   if (state === 'success') return (
     <div className="mt-3 border border-nigerian p-3">
       <p className="font-data text-nigerian text-xs mb-1 tracking-widest">CONFIRMED</p>
-      <a
-        href={`${EXPLORER}/${sig}?cluster=devnet`}
-        target="_blank" rel="noopener noreferrer"
-        className="font-data text-xs text-ghost hover:text-uniben break-all"
-      >
+      <a href={`${EXPLORER}/${sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
+        className="font-data text-xs text-ghost hover:text-uniben break-all">
         {sig.slice(0, 24)}...{sig.slice(-8)} →
       </a>
     </div>
@@ -48,7 +45,6 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
   const phantomUrl =
     `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}` +
     `?ref=${encodeURIComponent('https://levyledger.vercel.app')}`
-
   return (
     <div className="space-y-6">
       <div className="border border-uniben p-6">
@@ -58,10 +54,8 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
           Mobile browsers can't connect to Phantom directly.
           Tap below to open this page inside Phantom's built-in browser.
         </p>
-        <a
-          href={phantomUrl}
-          className="block w-full text-center font-data text-sm tracking-widest py-4 bg-uniben text-ink hover:opacity-90 transition-opacity"
-        >
+        <a href={phantomUrl}
+          className="block w-full text-center font-data text-sm tracking-widest py-4 bg-uniben text-ink hover:opacity-90 transition-opacity">
           OPEN IN PHANTOM →
         </a>
       </div>
@@ -72,7 +66,7 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
             'Open the Phantom app on your phone',
             'Tap the globe icon at the bottom of the app',
             'Type levyledger.vercel.app/admin?treasury=uniben in the address bar',
-            'Your wallet will connect automatically inside the app',
+            'Your wallet connects automatically inside the app',
           ].map((text, i) => (
             <div key={i} className="flex gap-4">
               <span className="font-data text-ghost text-xs w-6 shrink-0 mt-0.5">
@@ -84,12 +78,9 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
         </div>
       </div>
       <div className="border border-rule p-5">
-        <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">
-          Important
-        </p>
+        <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">Important</p>
         <p className="text-body text-sm leading-relaxed">
-          Make sure Phantom is set to{' '}
-          <span className="font-data text-ledger">Devnet</span> before connecting.
+          Make sure Phantom is set to <span className="font-data text-ledger">Devnet</span>.
           In Phantom → Settings → Developer Settings → Change Network to Devnet.
         </p>
       </div>
@@ -103,56 +94,44 @@ function AdminContent() {
   const wallet  = useWallet()
   const program = useAnchorProgram()
 
-  // FIX: Three separate states instead of one isMobile flag.
-  // needsPhantomGuide is only true when:
-  //   - we're on a mobile device AND
-  //   - Phantom is NOT injected into window (not inside Phantom browser)
-  // When inside Phantom browser: window.solana.isPhantom = true → guide hidden.
   const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
-  const [currentUrl, setCurrentUrl] = useState('')
+  const [currentUrl,  setCurrentUrl]  = useState('')
+  const [treasury,    setTreasury]    = useState<any>(null)
+  const [proposals,   setProposals]   = useState<any[]>([])
+  const [loading,     setLoading]     = useState(true)
+  const [tab,         setTab]         = useState<Tab>('sign')
+  const [confirm,     setConfirm]     = useState<string | null>(null)
 
-  const [treasury,  setTreasury]  = useState<any>(null)
-  const [proposals, setProposals] = useState<any[]>([])
-  const [loading,   setLoading]   = useState(true)
-  const [tab,       setTab]       = useState<Tab>('sign')
-  const [confirm,   setConfirm]   = useState<string | null>(null)
+  const [depositAmt,  setDepositAmt]  = useState('')
+  const [depositTx,   setDepositTx]   = useState<TxState>('idle')
+  const [depositSig,  setDepositSig]  = useState('')
+  const [depositErr,  setDepositErr]  = useState('')
 
-  const [depositAmt, setDepositAmt] = useState('')
-  const [depositTx,  setDepositTx]  = useState<TxState>('idle')
-  const [depositSig, setDepositSig] = useState('')
-  const [depositErr, setDepositErr] = useState('')
-
-  const [propAmt,    setPropAmt]    = useState('')
-  const [propRecip,  setPropRecip]  = useState('')
-  const [propCat,    setPropCat]    = useState('welfare')
-  const [propDesc,   setPropDesc]   = useState('')
-  const [proposeTx,  setProposeTx]  = useState<TxState>('idle')
-  const [proposeSig, setProposeSig] = useState('')
-  const [proposeErr, setProposeErr] = useState('')
+  const [propAmt,     setPropAmt]     = useState('')
+  const [propRecip,   setPropRecip]   = useState('')
+  const [propCat,     setPropCat]     = useState('welfare')
+  const [propDesc,    setPropDesc]    = useState('')
+  const [proposeTx,   setProposeTx]   = useState<TxState>('idle')
+  const [proposeSig,  setProposeSig]  = useState('')
+  const [proposeErr,  setProposeErr]  = useState('')
 
   const [initSigners, setInitSigners] = useState<string[]>(['','','','',''])
   const [initTx,      setInitTx]      = useState<TxState>('idle')
   const [initSig,     setInitSig]     = useState('')
   const [initErr,     setInitErr]     = useState('')
 
-  const [signTx,  setSignTx]  = useState<Record<number, TxState>>({})
-  const [signSig, setSignSig] = useState<Record<number, string>>({})
-  const [signErr, setSignErr] = useState<Record<number, string>>({})
+  const [signTx,      setSignTx]      = useState<Record<number, TxState>>({})
+  const [signSig,     setSignSig]     = useState<Record<number, string>>({})
+  const [signErr,     setSignErr]     = useState<Record<number, string>>({})
 
   useEffect(() => {
     const win = window as any
-    // Phantom injects window.solana when its browser is used.
-    // window.phantom.solana is the newer injection path.
     const phantomInjected =
       win.solana?.isPhantom === true ||
       win.phantom?.solana?.isPhantom === true
-
     const mobile =
       /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
       window.innerWidth < 768
-
-    // Only show the guide when mobile AND Phantom is not injected.
-    // Inside Phantom browser: mobile=true but phantomInjected=true → guide hidden.
     setNeedsPhantomGuide(mobile && !phantomInjected)
     setCurrentUrl(window.location.href)
   }, [])
@@ -184,8 +163,15 @@ function AdminContent() {
       !p.votedAgainst?.[execIndex]
   })
 
+  // FIX: all handlers now show visible error when program is null
+  // instead of returning silently.
   async function handleInit() {
-    if (!program || !wallet.publicKey) return
+    if (!wallet.publicKey) return
+    if (!program) {
+      setInitErr('Program not ready. Please refresh the page and try again.')
+      setInitTx('error')
+      return
+    }
     setInitTx('loading'); setInitErr('')
     try {
       const signerPubkeys = initSigners.map(s => new PublicKey(s.trim()))
@@ -210,7 +196,12 @@ function AdminContent() {
   }
 
   async function handleDeposit() {
-    if (!program || !wallet.publicKey || !treasury) return
+    if (!wallet.publicKey) return
+    if (!program) {
+      setDepositErr('Program not ready. Please refresh and try again.')
+      setDepositTx('error'); return
+    }
+    if (!treasury) return
     setDepositTx('loading'); setDepositErr('')
     try {
       const amount        = new BN(Math.floor(parseFloat(depositAmt) * 1_000_000))
@@ -235,7 +226,12 @@ function AdminContent() {
   }
 
   async function handlePropose() {
-    if (!program || !wallet.publicKey || !treasury) return
+    if (!wallet.publicKey) return
+    if (!program) {
+      setProposeErr('Program not ready. Please refresh and try again.')
+      setProposeTx('error'); return
+    }
+    if (!treasury) return
     setProposeTx('loading'); setProposeErr('')
     try {
       const amount        = new BN(Math.floor(parseFloat(propAmt) * 1_000_000))
@@ -263,7 +259,13 @@ function AdminContent() {
   }
 
   async function handleSign(p: any, approve: boolean) {
-    if (!program || !wallet.publicKey || !treasury) return
+    if (!wallet.publicKey) return
+    if (!program) {
+      setSignErr(prev => ({ ...prev, [p.index]: 'Program not ready. Please refresh.' }))
+      setSignTx(prev  => ({ ...prev, [p.index]: 'error' }))
+      return
+    }
+    if (!treasury) return
     const key = `${p.index}-${approve ? 'a' : 'r'}`
     if (confirm === key) {
       setConfirm(null)
@@ -315,26 +317,23 @@ function AdminContent() {
           {uniSlug.toUpperCase()} Admin
         </h1>
 
-        {/* Mobile in regular browser — show Phantom deep link guide */}
         {needsPhantomGuide && !wallet.publicKey && (
           <MobileWalletGate currentUrl={currentUrl} />
         )}
 
-        {/* Desktop or Phantom browser — no wallet yet */}
         {!needsPhantomGuide && !wallet.publicKey && (
           <div className="border border-rule p-6 space-y-4">
             <p className="font-data text-ghost text-xs tracking-widest uppercase">
               Connect Wallet
             </p>
             <p className="text-body text-sm leading-relaxed">
-              Connect your registered exec wallet. Make sure Phantom is set to{' '}
+              Connect your registered exec wallet. Make sure Phantom is on{' '}
               <span className="font-data text-ledger">Devnet</span>.
             </p>
             <WalletMultiButton />
           </div>
         )}
 
-        {/* Wallet connected — loading */}
         {wallet.publicKey && loading && (
           <div className="space-y-3 animate-pulse">
             <div className="h-3 bg-paper w-32" />
@@ -342,25 +341,44 @@ function AdminContent() {
           </div>
         )}
 
-        {/* No treasury — init form */}
         {wallet.publicKey && !loading && !treasury && (
           <div className="space-y-5">
             <div className="border border-rule p-4">
               <p className="font-data text-pending text-xs mb-2 tracking-widest uppercase">
                 Treasury Not Initialized
               </p>
-              <p className="text-body text-sm leading-relaxed">
-                No on-chain treasury exists for{' '}
+              <p className="text-body text-sm leading-relaxed mb-3">
+                No treasury exists for{' '}
                 <span className="font-data text-ledger">{uniSlug}</span> yet.
-                Enter the 5 exec wallet addresses below. Your wallet must be
-                the LevyLedger admin key.
+                Enter the 5 exec wallet addresses below.
               </p>
+              {/* FIX: clarify what public key means */}
+              <div className="bg-lifted p-3">
+                <p className="font-data text-ghost text-xs">
+                  Public key = wallet address. The long string you copy from Phantom.
+                  Each exec needs a separate Phantom account.
+                </p>
+              </div>
             </div>
+
+            {/* FIX: show program status so you can debug */}
+            {!program && wallet.publicKey && (
+              <div className="border border-pending p-3">
+                <p className="font-data text-pending text-xs tracking-widest uppercase mb-1">
+                  Program Loading
+                </p>
+                <p className="text-body text-xs">
+                  Connecting to the Solana program...
+                  If this persists, refresh the page inside Phantom browser.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-3">
               {initSigners.map((s, i) => (
                 <div key={i}>
                   <label className="font-data text-ghost text-xs block mb-1">
-                    Exec {i + 1} Public Key
+                    Exec {i + 1} Wallet Address
                   </label>
                   <input
                     value={s}
@@ -368,15 +386,19 @@ function AdminContent() {
                       const arr = [...initSigners]; arr[i] = e.target.value
                       setInitSigners(arr)
                     }}
-                    placeholder="Solana wallet address..."
+                    placeholder="e.g. 4enpQEjX2bLFcXtPkcFg..."
                     className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
                   />
                 </div>
               ))}
               <button
                 onClick={handleInit}
-                disabled={initTx === 'loading' || initSigners.some(s => !s.trim())}
-                className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity"
+                disabled={
+                  initTx === 'loading' ||
+                  initSigners.some(s => !s.trim()) ||
+                  !wallet.publicKey
+                }
+                className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity mt-2"
               >
                 {initTx === 'loading' ? 'INITIALIZING...' : 'INITIALIZE TREASURY'}
               </button>
@@ -385,14 +407,11 @@ function AdminContent() {
           </div>
         )}
 
-        {/* Treasury exists — not an exec */}
         {wallet.publicKey && !loading && treasury && !isExec && (
           <div className="border border-rule p-6 space-y-4">
-            <p className="font-data text-void text-xs tracking-widest uppercase">
-              Not Authorized
-            </p>
+            <p className="font-data text-void text-xs tracking-widest uppercase">Not Authorized</p>
             <p className="text-body text-sm leading-relaxed">
-              The connected wallet is not registered as an exec for this treasury.
+              This wallet is not registered as an exec for this treasury.
             </p>
             <div className="border-t border-rule pt-4">
               <p className="font-data text-ghost text-xs mb-1">Connected</p>
@@ -403,7 +422,6 @@ function AdminContent() {
           </div>
         )}
 
-        {/* Treasury exists — is exec — full panel */}
         {wallet.publicKey && !loading && treasury && isExec && (
           <div>
             <div className="border border-rule p-4 mb-6 flex items-center justify-between">
@@ -426,17 +444,12 @@ function AdminContent() {
 
             <div className="flex border-b border-rule mb-6">
               {(['sign', 'propose', 'deposit'] as Tab[]).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
+                <button key={t} onClick={() => setTab(t)}
                   className={`flex-1 py-3 font-data text-xs tracking-widest transition-colors relative ${
                     tab === t ? 'text-uniben' : 'text-ghost hover:text-body'
-                  }`}
-                >
+                  }`}>
                   {t.toUpperCase()}
-                  {tab === t && (
-                    <span className="absolute bottom-0 left-0 right-0 h-px bg-uniben" />
-                  )}
+                  {tab === t && <span className="absolute bottom-0 left-0 right-0 h-px bg-uniben" />}
                   {t === 'sign' && pendingProposals.length > 0 && (
                     <span className="ml-1 text-uniben">({pendingProposals.length})</span>
                   )}
@@ -448,16 +461,13 @@ function AdminContent() {
               <div>
                 {pendingProposals.length === 0 ? (
                   <div className="pt-6 text-center">
-                    <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
-                      All Clear
-                    </p>
+                    <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">All Clear</p>
                     <p className="text-body text-sm">No proposals waiting for your signature.</p>
                   </div>
                 ) : (
                   pendingProposals.map(p => {
                     const txState = signTx[p.index] || 'idle'
-                    const aKey    = `${p.index}-a`
-                    const rKey    = `${p.index}-r`
+                    const aKey = `${p.index}-a`, rKey = `${p.index}-r`
                     return (
                       <div key={p.index} className="border-b border-rule py-6">
                         <p className="font-data text-ghost text-xs mb-1">
@@ -473,34 +483,24 @@ function AdminContent() {
                           {treasury.threshold - p.signaturesFor} more needed
                         </p>
                         <div className="flex gap-3">
-                          <button
-                            onClick={() => handleSign(p, true)}
-                            disabled={txState === 'loading'}
+                          <button onClick={() => handleSign(p, true)} disabled={txState === 'loading'}
                             className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
                               confirm === aKey
                                 ? 'bg-nigerian text-ink border-nigerian'
                                 : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'
-                            }`}
-                          >
+                            }`}>
                             {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
                           </button>
-                          <button
-                            onClick={() => handleSign(p, false)}
-                            disabled={txState === 'loading'}
+                          <button onClick={() => handleSign(p, false)} disabled={txState === 'loading'}
                             className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
                               confirm === rKey
                                 ? 'bg-void text-ink border-void'
                                 : 'border-void text-void hover:bg-void hover:text-ink'
-                            }`}
-                          >
+                            }`}>
                             {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
                           </button>
                         </div>
-                        <TxResult
-                          state={txState}
-                          sig={signSig[p.index] || ''}
-                          error={signErr[p.index] || ''}
-                        />
+                        <TxResult state={txState} sig={signSig[p.index] || ''} error={signErr[p.index] || ''} />
                       </div>
                     )
                   })
@@ -518,27 +518,20 @@ function AdminContent() {
                 </div>
                 <div>
                   <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
-                  <input
-                    type="number" value={propAmt}
-                    onChange={e => setPropAmt(e.target.value)}
+                  <input type="number" value={propAmt} onChange={e => setPropAmt(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
-                  />
+                    className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
                 </div>
                 <div>
-                  <label className="font-data text-ghost text-xs block mb-1">Recipient Wallet</label>
-                  <input
-                    value={propRecip} onChange={e => setPropRecip(e.target.value)}
+                  <label className="font-data text-ghost text-xs block mb-1">Recipient Wallet Address</label>
+                  <input value={propRecip} onChange={e => setPropRecip(e.target.value)}
                     placeholder="Solana public key..."
-                    className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
-                  />
+                    className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
                 </div>
                 <div>
                   <label className="font-data text-ghost text-xs block mb-1">Category</label>
-                  <select
-                    value={propCat} onChange={e => setPropCat(e.target.value)}
-                    className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none"
-                  >
+                  <select value={propCat} onChange={e => setPropCat(e.target.value)}
+                    className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none">
                     {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
                       <option key={k} value={k}>{v}</option>
                     ))}
@@ -548,18 +541,13 @@ function AdminContent() {
                   <label className="font-data text-ghost text-xs block mb-1">
                     Description ({propDesc.length}/200)
                   </label>
-                  <textarea
-                    value={propDesc} onChange={e => setPropDesc(e.target.value)}
-                    maxLength={200} rows={3}
-                    placeholder="What is this for? Be specific."
-                    className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost"
-                  />
+                  <textarea value={propDesc} onChange={e => setPropDesc(e.target.value)}
+                    maxLength={200} rows={3} placeholder="What is this for? Be specific."
+                    className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost" />
                 </div>
-                <button
-                  onClick={handlePropose}
+                <button onClick={handlePropose}
                   disabled={proposeTx === 'loading' || !propAmt || !propRecip || !propDesc}
-                  className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity"
-                >
+                  className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
                   {proposeTx === 'loading' ? 'SUBMITTING...' : 'CREATE PROPOSAL'}
                 </button>
                 <TxResult state={proposeTx} sig={proposeSig} error={proposeErr} />
@@ -575,35 +563,24 @@ function AdminContent() {
                   </p>
                 </div>
                 <div>
-                  <label className="font-data text-ghost text-xs block mb-1">
-                    Amount (USDC)
-                  </label>
-                  <input
-                    type="number" value={depositAmt}
-                    onChange={e => setDepositAmt(e.target.value)}
+                  <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
+                  <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
-                  />
+                    className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
                 </div>
                 <div className="border border-rule p-4">
-                  <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">
-                    Need devnet USDC?
-                  </p>
+                  <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">Need devnet USDC?</p>
                   <p className="text-body text-sm leading-relaxed mb-2">
                     Get it from{' '}
-                    <a href="https://spl-token-faucet.com" target="_blank"
-                      rel="noopener noreferrer" className="text-uniben hover:underline">
-                      spl-token-faucet.com
-                    </a>
-                    {' '}— paste this mint address:
+                    <a href="https://spl-token-faucet.com" target="_blank" rel="noopener noreferrer"
+                      className="text-uniben hover:underline">spl-token-faucet.com</a>
+                    {' '}— paste this mint:
                   </p>
                   <p className="font-data text-ledger text-xs break-all">{DEVNET_USDC_MINT}</p>
                 </div>
-                <button
-                  onClick={handleDeposit}
+                <button onClick={handleDeposit}
                   disabled={depositTx === 'loading' || !depositAmt}
-                  className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity"
-                >
+                  className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
                   {depositTx === 'loading' ? 'DEPOSITING...' : 'DEPOSIT TO VAULT'}
                 </button>
                 <TxResult state={depositTx} sig={depositSig} error={depositErr} />
