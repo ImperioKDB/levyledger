@@ -21,8 +21,12 @@ export function useAnchorProgram() {
         { commitment: 'confirmed', preflightCommitment: 'confirmed' }
       )
       return new Program(IDL, provider)
-    } catch (err) {
+    } catch (err: any) {
       console.error('[useAnchorProgram] init failed:', err)
+      // Surface error to window so we can see it on mobile
+      if (typeof window !== 'undefined') {
+        (window as any).__anchorError = err?.message || String(err)
+      }
       return null
     }
   // wallet.connected included so hook re-runs when connection state changes
