@@ -4,7 +4,7 @@ import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import type { Idl } from '@coral-xyz/anchor'
 import idlRaw from '@/lib/idl/levyledger.json'
 
-const PROGRAM_ID_STR = 'DuUdUQKvHgjMpceHc3qPoG3C61DUSToZWPHkRLB3zrjW'
+const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
 
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
@@ -17,6 +17,8 @@ export function useAnchorProgram() {
     // On Phantom mobile browser, signTransaction may be undefined mid-cycle
     // even though the wallet is fully connected and has a publicKey.
     if (!wallet.publicKey) return null
+    // FIX: ensure signTransaction is available before creating provider
+    if (!wallet.signTransaction) return null
     try {
       const provider = new AnchorProvider(
         connection,
@@ -29,5 +31,5 @@ export function useAnchorProgram() {
       return null
     }
   // wallet.connected included so hook re-runs when connection state changes
-  }, [connection, wallet.publicKey, wallet.connected])
+  }, [connection, wallet.publicKey, wallet.connected, wallet.signTransaction])
 }
