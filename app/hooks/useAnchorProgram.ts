@@ -13,12 +13,7 @@ export function useAnchorProgram() {
   const wallet         = useWallet()
 
   return useMemo(() => {
-    // FIX: only check publicKey, not signTransaction.
-    // On Phantom mobile browser, signTransaction may be undefined mid-cycle
-    // even though the wallet is fully connected and has a publicKey.
     if (!wallet.publicKey) return null
-    // FIX: ensure signTransaction is available before creating provider
-    if (!wallet.signTransaction) return null
     try {
       const provider = new AnchorProvider(
         connection,
