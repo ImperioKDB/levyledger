@@ -20,21 +20,16 @@ const EXPLORER  = 'https://explorer.solana.com/tx'
 type Tab     = 'sign' | 'propose' | 'deposit'
 type TxState = 'idle' | 'loading' | 'success' | 'error'
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
 function TxResult({ state, sig, error }: { state: TxState; sig: string; error: string }) {
   if (state === 'loading') return (
-    <p className="font-data text-ghost text-xs mt-3 animate-pulse">
-      Awaiting confirmation...
-    </p>
+    <p className="font-data text-ghost text-xs mt-3 animate-pulse">Awaiting confirmation...</p>
   )
   if (state === 'success') return (
     <div className="mt-3 border border-nigerian p-3">
       <p className="font-data text-nigerian text-xs mb-1 tracking-widest">CONFIRMED</p>
       <a
         href={`${EXPLORER}/${sig}?cluster=devnet`}
-        target="_blank"
-        rel="noopener noreferrer"
+        target="_blank" rel="noopener noreferrer"
         className="font-data text-xs text-ghost hover:text-uniben break-all"
       >
         {sig.slice(0, 24)}...{sig.slice(-8)} →
@@ -49,61 +44,52 @@ function TxResult({ state, sig, error }: { state: TxState; sig: string; error: s
   return null
 }
 
-// Mobile: show Phantom deep link instead of wallet modal
 function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
-  const phantomBrowserUrl =
+  const phantomUrl =
     `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}` +
     `?ref=${encodeURIComponent('https://levyledger.vercel.app')}`
 
   return (
     <div className="space-y-6">
-      {/* Primary action */}
       <div className="border border-uniben p-6">
-        <p className="font-data text-uniben text-xs tracking-widest uppercase mb-3">
-          Step 1
-        </p>
-        <p className="font-display font-semibold text-ledger text-lg mb-2">
-          Open in Phantom App
-        </p>
+        <p className="font-data text-uniben text-xs tracking-widest uppercase mb-3">Step 1</p>
+        <p className="font-display font-semibold text-ledger text-lg mb-2">Open in Phantom App</p>
         <p className="text-body text-sm mb-5 leading-relaxed">
-          Mobile browsers cannot connect to Phantom directly. You need to open
-          this page inside the Phantom app's built-in browser.
+          Mobile browsers can't connect to Phantom directly.
+          Tap below to open this page inside Phantom's built-in browser.
         </p>
         <a
-          href={phantomBrowserUrl}
+          href={phantomUrl}
           className="block w-full text-center font-data text-sm tracking-widest py-4 bg-uniben text-ink hover:opacity-90 transition-opacity"
         >
           OPEN IN PHANTOM →
         </a>
       </div>
-
-      {/* Manual steps */}
       <div className="border border-rule p-5">
-        <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">
-          Or do it manually
-        </p>
+        <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">Or manually</p>
         <div className="space-y-4">
           {[
-            { n: '01', text: 'Open the Phantom app on your phone' },
-            { n: '02', text: 'Tap the globe/browser icon at the bottom' },
-            { n: '03', text: 'Type levyledger.vercel.app/admin?treasury=uniben in the address bar' },
-            { n: '04', text: 'Your wallet will connect automatically' },
-          ].map(s => (
-            <div key={s.n} className="flex gap-4">
-              <span className="font-data text-ghost text-xs w-6 shrink-0 mt-0.5">{s.n}</span>
-              <p className="text-body text-sm leading-relaxed">{s.text}</p>
+            'Open the Phantom app on your phone',
+            'Tap the globe icon at the bottom of the app',
+            'Type levyledger.vercel.app/admin?treasury=uniben in the address bar',
+            'Your wallet will connect automatically inside the app',
+          ].map((text, i) => (
+            <div key={i} className="flex gap-4">
+              <span className="font-data text-ghost text-xs w-6 shrink-0 mt-0.5">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p className="text-body text-sm leading-relaxed">{text}</p>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Devnet reminder */}
       <div className="border border-rule p-5">
-        <p className="font-data text-pending text-xs tracking-widest uppercase mb-3">
+        <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">
           Important
         </p>
         <p className="text-body text-sm leading-relaxed">
-          Make sure Phantom is set to <span className="font-data text-ledger">Devnet</span>.
+          Make sure Phantom is set to{' '}
+          <span className="font-data text-ledger">Devnet</span> before connecting.
           In Phantom → Settings → Developer Settings → Change Network to Devnet.
         </p>
       </div>
@@ -111,28 +97,31 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
   )
 }
 
-// ── Main admin content ────────────────────────────────────────────────────────
 function AdminContent() {
   const params  = useSearchParams()
   const uniSlug = params.get('treasury') || 'uniben'
   const wallet  = useWallet()
   const program = useAnchorProgram()
 
-  const [isMobile,  setIsMobile]  = useState(false)
+  // FIX: Three separate states instead of one isMobile flag.
+  // needsPhantomGuide is only true when:
+  //   - we're on a mobile device AND
+  //   - Phantom is NOT injected into window (not inside Phantom browser)
+  // When inside Phantom browser: window.solana.isPhantom = true → guide hidden.
+  const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
   const [currentUrl, setCurrentUrl] = useState('')
+
   const [treasury,  setTreasury]  = useState<any>(null)
   const [proposals, setProposals] = useState<any[]>([])
   const [loading,   setLoading]   = useState(true)
   const [tab,       setTab]       = useState<Tab>('sign')
   const [confirm,   setConfirm]   = useState<string | null>(null)
 
-  // Deposit state
   const [depositAmt, setDepositAmt] = useState('')
   const [depositTx,  setDepositTx]  = useState<TxState>('idle')
   const [depositSig, setDepositSig] = useState('')
   const [depositErr, setDepositErr] = useState('')
 
-  // Propose state
   const [propAmt,    setPropAmt]    = useState('')
   const [propRecip,  setPropRecip]  = useState('')
   const [propCat,    setPropCat]    = useState('welfare')
@@ -141,22 +130,30 @@ function AdminContent() {
   const [proposeSig, setProposeSig] = useState('')
   const [proposeErr, setProposeErr] = useState('')
 
-  // Init state
   const [initSigners, setInitSigners] = useState<string[]>(['','','','',''])
   const [initTx,      setInitTx]      = useState<TxState>('idle')
   const [initSig,     setInitSig]     = useState('')
   const [initErr,     setInitErr]     = useState('')
 
-  // Sign state
   const [signTx,  setSignTx]  = useState<Record<number, TxState>>({})
   const [signSig, setSignSig] = useState<Record<number, string>>({})
   const [signErr, setSignErr] = useState<Record<number, string>>({})
 
   useEffect(() => {
-    // Mobile detection — triggers after mount to avoid SSR mismatch
-    const mobile = window.innerWidth < 768 ||
-      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-    setIsMobile(mobile)
+    const win = window as any
+    // Phantom injects window.solana when its browser is used.
+    // window.phantom.solana is the newer injection path.
+    const phantomInjected =
+      win.solana?.isPhantom === true ||
+      win.phantom?.solana?.isPhantom === true
+
+    const mobile =
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      window.innerWidth < 768
+
+    // Only show the guide when mobile AND Phantom is not injected.
+    // Inside Phantom browser: mobile=true but phantomInjected=true → guide hidden.
+    setNeedsPhantomGuide(mobile && !phantomInjected)
     setCurrentUrl(window.location.href)
   }, [])
 
@@ -187,7 +184,6 @@ function AdminContent() {
       !p.votedAgainst?.[execIndex]
   })
 
-  // ── Transactions ───────────────────────────────────────────────────────────
   async function handleInit() {
     if (!program || !wallet.publicKey) return
     setInitTx('loading'); setInitErr('')
@@ -304,45 +300,41 @@ function AdminContent() {
     }
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-ink">
       <header className="border-b border-rule px-6 py-4 flex items-center justify-between">
         <Link href={`/${uniSlug}`} className="font-data text-ghost text-xs">
           ← {uniSlug.toUpperCase()}
         </Link>
-        {/* Only show wallet button on desktop or when already inside Phantom browser */}
-        {(!isMobile || wallet.publicKey) && <WalletMultiButton />}
+        {!needsPhantomGuide && <WalletMultiButton />}
       </header>
 
       <div className="px-6 pt-8 pb-28">
-        <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">
-          Exec Panel
-        </p>
+        <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">Exec Panel</p>
         <h1 className="font-display text-2xl font-bold text-ledger mb-6">
           {uniSlug.toUpperCase()} Admin
         </h1>
 
-        {/* ── CASE 1: Mobile, no wallet → show Phantom deep link guide ──── */}
-        {isMobile && !wallet.publicKey && (
+        {/* Mobile in regular browser — show Phantom deep link guide */}
+        {needsPhantomGuide && !wallet.publicKey && (
           <MobileWalletGate currentUrl={currentUrl} />
         )}
 
-        {/* ── CASE 2: Desktop, no wallet ────────────────────────────────── */}
-        {!isMobile && !wallet.publicKey && (
+        {/* Desktop or Phantom browser — no wallet yet */}
+        {!needsPhantomGuide && !wallet.publicKey && (
           <div className="border border-rule p-6 space-y-4">
             <p className="font-data text-ghost text-xs tracking-widest uppercase">
               Connect Wallet
             </p>
             <p className="text-body text-sm leading-relaxed">
-              Connect your registered exec wallet to access the admin panel.
-              Make sure Phantom is set to <span className="font-data text-ledger">Devnet</span>.
+              Connect your registered exec wallet. Make sure Phantom is set to{' '}
+              <span className="font-data text-ledger">Devnet</span>.
             </p>
             <WalletMultiButton />
           </div>
         )}
 
-        {/* ── CASE 3: Wallet connected, loading treasury ────────────────── */}
+        {/* Wallet connected — loading */}
         {wallet.publicKey && loading && (
           <div className="space-y-3 animate-pulse">
             <div className="h-3 bg-paper w-32" />
@@ -350,18 +342,18 @@ function AdminContent() {
           </div>
         )}
 
-        {/* ── CASE 4: No treasury — show init form ─────────────────────── */}
+        {/* No treasury — init form */}
         {wallet.publicKey && !loading && !treasury && (
           <div className="space-y-5">
             <div className="border border-rule p-4">
-              <p className="font-data text-pending text-xs mb-2 tracking-widest">
-                TREASURY NOT INITIALIZED
+              <p className="font-data text-pending text-xs mb-2 tracking-widest uppercase">
+                Treasury Not Initialized
               </p>
               <p className="text-body text-sm leading-relaxed">
                 No on-chain treasury exists for{' '}
                 <span className="font-data text-ledger">{uniSlug}</span> yet.
-                Fill in the 5 exec wallet addresses and initialize it below.
-                Your wallet must be the LevyLedger admin key.
+                Enter the 5 exec wallet addresses below. Your wallet must be
+                the LevyLedger admin key.
               </p>
             </div>
             <div className="space-y-3">
@@ -373,8 +365,7 @@ function AdminContent() {
                   <input
                     value={s}
                     onChange={e => {
-                      const arr = [...initSigners]
-                      arr[i] = e.target.value
+                      const arr = [...initSigners]; arr[i] = e.target.value
                       setInitSigners(arr)
                     }}
                     placeholder="Solana wallet address..."
@@ -385,7 +376,7 @@ function AdminContent() {
               <button
                 onClick={handleInit}
                 disabled={initTx === 'loading' || initSigners.some(s => !s.trim())}
-                className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity mt-2"
+                className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity"
               >
                 {initTx === 'loading' ? 'INITIALIZING...' : 'INITIALIZE TREASURY'}
               </button>
@@ -394,7 +385,7 @@ function AdminContent() {
           </div>
         )}
 
-        {/* ── CASE 5: Treasury exists, not exec ────────────────────────── */}
+        {/* Treasury exists — not an exec */}
         {wallet.publicKey && !loading && treasury && !isExec && (
           <div className="border border-rule p-6 space-y-4">
             <p className="font-data text-void text-xs tracking-widest uppercase">
@@ -404,50 +395,42 @@ function AdminContent() {
               The connected wallet is not registered as an exec for this treasury.
             </p>
             <div className="border-t border-rule pt-4">
-              <p className="font-data text-ghost text-xs mb-1">Connected wallet</p>
+              <p className="font-data text-ghost text-xs mb-1">Connected</p>
               <p className="font-data text-ledger text-xs break-all">
                 {wallet.publicKey.toString()}
               </p>
             </div>
-            <p className="text-body text-xs leading-relaxed text-ghost">
-              If this is the correct wallet, it may not have been added as an exec
-              during treasury initialization. Contact the treasury admin.
-            </p>
           </div>
         )}
 
-        {/* ── CASE 6: Treasury exists, is exec — full panel ────────────── */}
+        {/* Treasury exists — is exec — full panel */}
         {wallet.publicKey && !loading && treasury && isExec && (
           <div>
-            {/* Exec info banner */}
             <div className="border border-rule p-4 mb-6 flex items-center justify-between">
               <div>
                 <p className="font-data text-nigerian text-xs tracking-widest uppercase mb-1">
-                  Authorized Exec #{execIndex + 1}
+                  Authorized · Exec #{execIndex + 1}
                 </p>
                 <p className="font-data text-ghost text-xs">
                   {wallet.publicKey.toString().slice(0, 8)}...
                   {wallet.publicKey.toString().slice(-6)}
                 </p>
               </div>
-              <p className="font-data text-ghost text-xs text-right">
-                Vault<br />
-                <span className="text-uniben font-bold">
+              <div className="text-right">
+                <p className="font-data text-ghost text-xs mb-1">Vault</p>
+                <p className="font-data text-uniben text-sm font-bold">
                   ${formatUSDC(treasury.availableBalance)}
-                </span>
-              </p>
+                </p>
+              </div>
             </div>
 
-            {/* Tab bar */}
             <div className="flex border-b border-rule mb-6">
               {(['sign', 'propose', 'deposit'] as Tab[]).map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
                   className={`flex-1 py-3 font-data text-xs tracking-widest transition-colors relative ${
-                    tab === t
-                      ? 'text-uniben'
-                      : 'text-ghost hover:text-body'
+                    tab === t ? 'text-uniben' : 'text-ghost hover:text-body'
                   }`}
                 >
                   {t.toUpperCase()}
@@ -461,7 +444,6 @@ function AdminContent() {
               ))}
             </div>
 
-            {/* ── SIGN TAB ─────────────────────────────────────────────── */}
             {tab === 'sign' && (
               <div>
                 {pendingProposals.length === 0 ? (
@@ -469,95 +451,84 @@ function AdminContent() {
                     <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
                       All Clear
                     </p>
-                    <p className="text-body text-sm">
-                      No proposals waiting for your signature.
-                    </p>
+                    <p className="text-body text-sm">No proposals waiting for your signature.</p>
                   </div>
                 ) : (
-                  <div className="space-y-0">
-                    {pendingProposals.map(p => {
-                      const txState = signTx[p.index] || 'idle'
-                      const aKey    = `${p.index}-a`
-                      const rKey    = `${p.index}-r`
-                      return (
-                        <div key={p.index} className="border-b border-rule py-6">
-                          <p className="font-data text-ghost text-xs mb-1">
-                            Proposal #{p.index} · {Object.keys(p.category)[0]}
-                          </p>
-                          <p className="font-data text-ledger text-3xl font-bold mb-1">
-                            ${formatUSDC(p.amount)}
-                            <span className="text-ghost text-sm ml-2 font-normal">USDC</span>
-                          </p>
-                          <p className="text-body text-sm mb-2">{p.description}</p>
-                          <p className="font-data text-ghost text-xs mb-5">
-                            {p.signaturesFor}/{treasury.threshold} signatures · {' '}
-                            {treasury.threshold - p.signaturesFor} more needed to execute
-                          </p>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => handleSign(p, true)}
-                              disabled={txState === 'loading'}
-                              className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
-                                confirm === aKey
-                                  ? 'bg-nigerian text-ink border-nigerian'
-                                  : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'
-                              }`}
-                            >
-                              {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
-                            </button>
-                            <button
-                              onClick={() => handleSign(p, false)}
-                              disabled={txState === 'loading'}
-                              className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
-                                confirm === rKey
-                                  ? 'bg-void text-ink border-void'
-                                  : 'border-void text-void hover:bg-void hover:text-ink'
-                              }`}
-                            >
-                              {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
-                            </button>
-                          </div>
-                          <TxResult
-                            state={txState}
-                            sig={signSig[p.index] || ''}
-                            error={signErr[p.index] || ''}
-                          />
+                  pendingProposals.map(p => {
+                    const txState = signTx[p.index] || 'idle'
+                    const aKey    = `${p.index}-a`
+                    const rKey    = `${p.index}-r`
+                    return (
+                      <div key={p.index} className="border-b border-rule py-6">
+                        <p className="font-data text-ghost text-xs mb-1">
+                          Proposal #{p.index} · {Object.keys(p.category)[0]}
+                        </p>
+                        <p className="font-data text-ledger text-3xl font-bold mb-1">
+                          ${formatUSDC(p.amount)}
+                          <span className="text-ghost text-sm ml-2 font-normal">USDC</span>
+                        </p>
+                        <p className="text-body text-sm mb-2">{p.description}</p>
+                        <p className="font-data text-ghost text-xs mb-5">
+                          {p.signaturesFor}/{treasury.threshold} signed ·{' '}
+                          {treasury.threshold - p.signaturesFor} more needed
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleSign(p, true)}
+                            disabled={txState === 'loading'}
+                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
+                              confirm === aKey
+                                ? 'bg-nigerian text-ink border-nigerian'
+                                : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'
+                            }`}
+                          >
+                            {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
+                          </button>
+                          <button
+                            onClick={() => handleSign(p, false)}
+                            disabled={txState === 'loading'}
+                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
+                              confirm === rKey
+                                ? 'bg-void text-ink border-void'
+                                : 'border-void text-void hover:bg-void hover:text-ink'
+                            }`}
+                          >
+                            {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
+                          </button>
                         </div>
-                      )
-                    })}
-                  </div>
+                        <TxResult
+                          state={txState}
+                          sig={signSig[p.index] || ''}
+                          error={signErr[p.index] || ''}
+                        />
+                      </div>
+                    )
+                  })
                 )}
               </div>
             )}
 
-            {/* ── PROPOSE TAB ──────────────────────────────────────────── */}
             {tab === 'propose' && (
               <div className="space-y-4">
-                <div className="border-b border-rule pb-4 mb-2">
+                <div className="border-b border-rule pb-4">
                   <p className="font-data text-ghost text-xs mb-1">Available to spend</p>
                   <p className="font-data text-uniben text-2xl font-bold">
                     ${formatUSDC(treasury.availableBalance)} USDC
                   </p>
                 </div>
                 <div>
-                  <label className="font-data text-ghost text-xs block mb-1">
-                    Amount (USDC)
-                  </label>
+                  <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
                   <input
-                    type="number"
-                    value={propAmt}
+                    type="number" value={propAmt}
                     onChange={e => setPropAmt(e.target.value)}
                     placeholder="0.00"
                     className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
                   />
                 </div>
                 <div>
-                  <label className="font-data text-ghost text-xs block mb-1">
-                    Recipient Wallet
-                  </label>
+                  <label className="font-data text-ghost text-xs block mb-1">Recipient Wallet</label>
                   <input
-                    value={propRecip}
-                    onChange={e => setPropRecip(e.target.value)}
+                    value={propRecip} onChange={e => setPropRecip(e.target.value)}
                     placeholder="Solana public key..."
                     className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
                   />
@@ -565,8 +536,7 @@ function AdminContent() {
                 <div>
                   <label className="font-data text-ghost text-xs block mb-1">Category</label>
                   <select
-                    value={propCat}
-                    onChange={e => setPropCat(e.target.value)}
+                    value={propCat} onChange={e => setPropCat(e.target.value)}
                     className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none"
                   >
                     {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
@@ -579,10 +549,8 @@ function AdminContent() {
                     Description ({propDesc.length}/200)
                   </label>
                   <textarea
-                    value={propDesc}
-                    onChange={e => setPropDesc(e.target.value)}
-                    maxLength={200}
-                    rows={3}
+                    value={propDesc} onChange={e => setPropDesc(e.target.value)}
+                    maxLength={200} rows={3}
                     placeholder="What is this for? Be specific."
                     className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost"
                   />
@@ -598,10 +566,9 @@ function AdminContent() {
               </div>
             )}
 
-            {/* ── DEPOSIT TAB ──────────────────────────────────────────── */}
             {tab === 'deposit' && (
               <div className="space-y-4">
-                <div className="border-b border-rule pb-4 mb-2">
+                <div className="border-b border-rule pb-4">
                   <p className="font-data text-ghost text-xs mb-1">Current vault balance</p>
                   <p className="font-data text-uniben text-2xl font-bold">
                     ${formatUSDC(treasury.availableBalance)} USDC
@@ -609,11 +576,10 @@ function AdminContent() {
                 </div>
                 <div>
                   <label className="font-data text-ghost text-xs block mb-1">
-                    Amount to deposit (USDC)
+                    Amount (USDC)
                   </label>
                   <input
-                    type="number"
-                    value={depositAmt}
+                    type="number" value={depositAmt}
                     onChange={e => setDepositAmt(e.target.value)}
                     placeholder="0.00"
                     className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
@@ -621,23 +587,17 @@ function AdminContent() {
                 </div>
                 <div className="border border-rule p-4">
                   <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">
-                    Before depositing
+                    Need devnet USDC?
                   </p>
-                  <p className="text-body text-sm leading-relaxed">
-                    Your wallet needs devnet USDC. Get it from{' '}
-                    <a
-                      href="https://spl-token-faucet.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-uniben hover:underline"
-                    >
+                  <p className="text-body text-sm leading-relaxed mb-2">
+                    Get it from{' '}
+                    <a href="https://spl-token-faucet.com" target="_blank"
+                      rel="noopener noreferrer" className="text-uniben hover:underline">
                       spl-token-faucet.com
                     </a>
-                    {' '}using mint address:
+                    {' '}— paste this mint address:
                   </p>
-                  <p className="font-data text-ledger text-xs break-all mt-2">
-                    {DEVNET_USDC_MINT}
-                  </p>
+                  <p className="font-data text-ledger text-xs break-all">{DEVNET_USDC_MINT}</p>
                 </div>
                 <button
                   onClick={handleDeposit}
