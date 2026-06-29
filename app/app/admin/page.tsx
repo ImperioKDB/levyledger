@@ -9,6 +9,7 @@ import { BN } from '@coral-xyz/anchor'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
+const BUILD_TS = '2026-06-29 21:18 UTC'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/anchor'
 import { DEVNET_USDC_MINT, CATEGORY_LABELS } from '@/lib/constants'
@@ -92,7 +93,7 @@ function AdminContent() {
   const params  = useSearchParams()
   const uniSlug = params.get('treasury') || 'uniben'
   const wallet  = useWallet()
-  const program = useAnchorProgram()
+  const { program, anchorError } = useAnchorProgram()
 
   const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
   const [currentUrl,  setCurrentUrl]  = useState('')
@@ -361,16 +362,17 @@ function AdminContent() {
               </div>
             </div>
 
-            {/* FIX: show program status so you can debug */}
             {!program && wallet.publicKey && (
-              <div className="border border-pending p-3">
-                <p className="font-data text-pending text-xs tracking-widest uppercase mb-1">
+              <div className="border border-pending p-3 space-y-2">
+                <p className="font-data text-pending text-xs tracking-widest uppercase">
                   Program Loading
                 </p>
-                <p className="text-body text-xs">
-                  Connecting to the Solana program...
-                  If this persists, refresh the page inside Phantom browser.
-                </p>
+                {anchorError ? (
+                  <p className="font-data text-void text-xs break-all">ERROR: {anchorError}</p>
+                ) : (
+                  <p className="text-body text-xs">Connecting to the Solana program...</p>
+                )}
+                <p className="font-data text-ghost text-xs">Build: {BUILD_TS}</p>
               </div>
             )}
 
