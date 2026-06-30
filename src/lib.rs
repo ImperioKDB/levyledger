@@ -47,9 +47,6 @@ pub mod levyledger {
         Ok(())
     }
 
-    /// Deposit is intentionally exec-only. Students pay levies to the exco
-    /// off-chain (cash/transfer); the exco converts to USDC and deposits
-    /// here. This matches the product spec, not a bug.
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         require!(amount > 0, LevyError::AmountZero);
         let depositor_key = ctx.accounts.depositor.key();
@@ -57,8 +54,6 @@ pub mod levyledger {
             ctx.accounts.treasury.signers.contains(&depositor_key),
             LevyError::UnauthorizedSigner
         );
-        // FIX: explicit mint check for a clear, legible error instead of
-        // relying solely on the SPL Token program's internal mint match.
         require!(
             ctx.accounts.depositor_token_account.mint == ctx.accounts.usdc_mint.key(),
             LevyError::InvalidMint
@@ -137,13 +132,6 @@ pub mod levyledger {
         Ok(())
     }
 
-    /// FIX: no longer mutates state before returning an error. A return
-    /// from err!() rolls back every mutation made earlier in the same
-    /// instruction call — so the old code's "set Expired, move funds,
-    /// then error" pattern silently reverted itself every time, leaving
-    /// the proposal Active forever with funds permanently locked.
-    /// This version only blocks the sign action with a clean error.
-    /// Actual expiry cleanup happens in expire_proposal below.
     pub fn sign_proposal(ctx: Context<SignProposal>, approve: bool) -> Result<()> {
         let signer_key = ctx.accounts.signer.key();
         let signer_index = ctx.accounts.treasury.signers
@@ -202,9 +190,6 @@ pub mod levyledger {
                 ctx.accounts.proposal.status = ProposalStatus::Executed;
             }
         } else {
-            // FIX: also block reject if this signer already approved.
-            // Previously only voted_against was checked, allowing one
-            // signer to inflate both signatures_for and signatures_against.
             require!(
                 !ctx.accounts.proposal.signed_by[signer_index],
                 LevyError::AlreadySigned
@@ -229,10 +214,6 @@ pub mod levyledger {
         Ok(())
     }
 
-    /// NEW. Permissionless cleanup — anyone can call this once a proposal's
-    /// deadline has passed without reaching threshold. Unlike the old
-    /// in-line attempt, this instruction returns Ok(()) on success, so the
-    /// state change (status -> Expired, funds unreserved) actually persists.
     pub fn expire_proposal(ctx: Context<ExpireProposal>) -> Result<()> {
         let clock = Clock::get()?;
         require!(
@@ -361,7 +342,6 @@ pub struct SignProposal<'info> {
 
 #[derive(Accounts)]
 pub struct ExpireProposal<'info> {
-    /// Anyone can call this — permissionless cleanup. Only pays the tx fee.
     pub caller: Signer<'info>,
     #[account(
         mut,
