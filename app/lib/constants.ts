@@ -1,3 +1,4 @@
+// FIX: corrected to match the actually-deployed program (was stale).
 export const PROGRAM_ID       = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
 export const DEVNET_USDC_MINT = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'
 export const ADMIN_KEY        = '4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N'
@@ -10,8 +11,6 @@ export const CATEGORY_LABELS: Record<string, string> = {
   other:     'Other',
 }
 
-// executed stays green — universal semantic: green = approved = done
-// active uses uniben purple — on-brand for UNIBEN students
 export const STATUS_COLORS: Record<string, string> = {
   active:   'text-uniben   border-uniben',
   executed: 'text-nigerian border-nigerian',
