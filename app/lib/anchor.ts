@@ -3,21 +3,22 @@ import { Program, AnchorProvider } from '@coral-xyz/anchor'
 import type { Idl } from '@coral-xyz/anchor'
 import idlRaw from './idl/levyledger.json'
 
+// FIX: corrected to the actually-deployed program ID. Was previously
+// pointing to a stale ID from an earlier Playground re-import, which
+// caused every PDA + RPC call to target the wrong (or nonexistent) program.
 const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
 const PROGRAM_ID     = new PublicKey(PROGRAM_ID_STR)
 const RPC_URL        = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
 
 export const connection = new Connection(RPC_URL, 'confirmed')
 
-// FIX: inject address field so Anchor 0.30 Program constructor doesn't throw.
-// Solana Playground exports IDL without address/metadata — Anchor 0.30 requires it.
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
 export function getReadonlyProgram() {
   const dummyWallet = {
-    publicKey:            PROGRAM_ID, // any valid pubkey works for reads
-    signTransaction:      async (tx: any) => tx,
-    signAllTransactions:  async (txs: any[]) => txs,
+    publicKey:           PROGRAM_ID,
+    signTransaction:     async (tx: any) => tx,
+    signAllTransactions: async (txs: any[]) => txs,
   }
   const provider = new AnchorProvider(
     connection, dummyWallet as any, { commitment: 'confirmed' }
