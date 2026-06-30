@@ -47,12 +47,21 @@ pub mod levyledger {
         Ok(())
     }
 
+    /// Deposit is intentionally exec-only. Students pay levies to the exco
+    /// off-chain (cash/transfer); the exco converts to USDC and deposits
+    /// here. This matches the product spec, not a bug.
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         require!(amount > 0, LevyError::AmountZero);
         let depositor_key = ctx.accounts.depositor.key();
         require!(
             ctx.accounts.treasury.signers.contains(&depositor_key),
             LevyError::UnauthorizedSigner
+        );
+        // FIX: explicit mint check for a clear, legible error instead of
+        // relying solely on the SPL Token program's internal mint match.
+        require!(
+            ctx.accounts.depositor_token_account.mint == ctx.accounts.usdc_mint.key(),
+            LevyError::InvalidMint
         );
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -128,6 +137,13 @@ pub mod levyledger {
         Ok(())
     }
 
+    /// FIX: no longer mutates state before returning an error. A return
+    /// from err!() rolls back every mutation made earlier in the same
+    /// instruction call — so the old code's "set Expired, move funds,
+    /// then error" pattern silently reverted itself every time, leaving
+    /// the proposal Active forever with funds permanently locked.
+    /// This version only blocks the sign action with a clean error.
+    /// Actual expiry cleanup happens in expire_proposal below.
     pub fn sign_proposal(ctx: Context<SignProposal>, approve: bool) -> Result<()> {
         let signer_key = ctx.accounts.signer.key();
         let signer_index = ctx.accounts.treasury.signers
@@ -138,19 +154,11 @@ pub mod levyledger {
         let threshold = ctx.accounts.treasury.threshold;
         let proposal_amount = ctx.accounts.proposal.amount;
 
-        // Lazy expiry check
         let clock = Clock::get()?;
-        if clock.unix_timestamp > ctx.accounts.proposal.expires_at {
-            ctx.accounts.proposal.status = ProposalStatus::Expired;
-            ctx.accounts.treasury.reserved_balance = ctx.accounts.treasury.reserved_balance
-                .checked_sub(proposal_amount).ok_or(LevyError::Overflow)?;
-            ctx.accounts.treasury.available_balance = ctx.accounts.treasury.available_balance
-                .checked_add(proposal_amount).ok_or(LevyError::Overflow)?;
-            ctx.accounts.treasury.active_proposal_count = ctx.accounts.treasury.active_proposal_count
-                .checked_sub(1).ok_or(LevyError::Overflow)?;
-            return err!(LevyError::ProposalExpired);
-        }
-
+        require!(
+            clock.unix_timestamp <= ctx.accounts.proposal.expires_at,
+            LevyError::ProposalExpired
+        );
         require!(
             ctx.accounts.proposal.status == ProposalStatus::Active,
             LevyError::ProposalNotActive
@@ -165,7 +173,6 @@ pub mod levyledger {
             ctx.accounts.proposal.signatures_for += 1;
 
             if ctx.accounts.proposal.signatures_for >= threshold {
-                // Clone data needed for PDA signing before CPI
                 let treasury_slug = ctx.accounts.treasury.university_slug.clone();
                 let treasury_bump = ctx.accounts.treasury.bump;
                 let seeds = &[
@@ -195,6 +202,13 @@ pub mod levyledger {
                 ctx.accounts.proposal.status = ProposalStatus::Executed;
             }
         } else {
+            // FIX: also block reject if this signer already approved.
+            // Previously only voted_against was checked, allowing one
+            // signer to inflate both signatures_for and signatures_against.
+            require!(
+                !ctx.accounts.proposal.signed_by[signer_index],
+                LevyError::AlreadySigned
+            );
             require!(
                 !ctx.accounts.proposal.voted_against[signer_index],
                 LevyError::AlreadyVotedAgainst
@@ -212,6 +226,32 @@ pub mod levyledger {
                 ctx.accounts.proposal.status = ProposalStatus::Rejected;
             }
         }
+        Ok(())
+    }
+
+    /// NEW. Permissionless cleanup — anyone can call this once a proposal's
+    /// deadline has passed without reaching threshold. Unlike the old
+    /// in-line attempt, this instruction returns Ok(()) on success, so the
+    /// state change (status -> Expired, funds unreserved) actually persists.
+    pub fn expire_proposal(ctx: Context<ExpireProposal>) -> Result<()> {
+        let clock = Clock::get()?;
+        require!(
+            clock.unix_timestamp > ctx.accounts.proposal.expires_at,
+            LevyError::ProposalNotActive
+        );
+        require!(
+            ctx.accounts.proposal.status == ProposalStatus::Active,
+            LevyError::ProposalNotActive
+        );
+
+        let amount = ctx.accounts.proposal.amount;
+        ctx.accounts.proposal.status = ProposalStatus::Expired;
+        ctx.accounts.treasury.reserved_balance = ctx.accounts.treasury.reserved_balance
+            .checked_sub(amount).ok_or(LevyError::Overflow)?;
+        ctx.accounts.treasury.available_balance = ctx.accounts.treasury.available_balance
+            .checked_add(amount).ok_or(LevyError::Overflow)?;
+        ctx.accounts.treasury.active_proposal_count = ctx.accounts.treasury.active_proposal_count
+            .checked_sub(1).ok_or(LevyError::Overflow)?;
         Ok(())
     }
 }
@@ -264,6 +304,7 @@ pub struct Deposit<'info> {
         bump = treasury.vault_bump
     )]
     pub vault: Account<'info, TokenAccount>,
+    pub usdc_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -318,6 +359,23 @@ pub struct SignProposal<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+#[derive(Accounts)]
+pub struct ExpireProposal<'info> {
+    /// Anyone can call this — permissionless cleanup. Only pays the tx fee.
+    pub caller: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"treasury", treasury.university_slug.as_bytes()],
+        bump = treasury.bump
+    )]
+    pub treasury: Account<'info, TreasuryAccount>,
+    #[account(
+        mut,
+        constraint = proposal.treasury == treasury.key() @ LevyError::UnauthorizedSigner
+    )]
+    pub proposal: Account<'info, ProposalAccount>,
+}
+
 #[account]
 pub struct TreasuryAccount {
     pub university_slug: String,
@@ -334,7 +392,6 @@ pub struct TreasuryAccount {
 }
 
 impl TreasuryAccount {
-    // 8 + 24 + 160 + 1 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 = 243 → padded to 300
     pub const SPACE: usize = 300;
 }
 
@@ -358,7 +415,6 @@ pub struct ProposalAccount {
 }
 
 impl ProposalAccount {
-    // 8 + 32 + 32 + 32 + 8 + 1 + 204 + 1 + 5 + 5 + 1 + 1 + 8 + 8 + 8 + 1 = 355 → padded to 420
     pub const SPACE: usize = 420;
 }
 
@@ -405,6 +461,8 @@ pub enum LevyError {
     TooManyActiveProposals,
     #[msg("All 5 signer pubkeys must be unique and non-zero")]
     InvalidSigners,
+    #[msg("Deposit token account does not match the USDC mint")]
+    InvalidMint,
     #[msg("Arithmetic overflow")]
     Overflow,
 }
