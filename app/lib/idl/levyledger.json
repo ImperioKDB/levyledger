@@ -143,7 +143,7 @@
           "name": "category",
           "type": {
             "defined": {
-              "name": "ProposalCategory"
+              "name": "proposalCategory"
             }
           }
         },
@@ -201,7 +201,7 @@
   ],
   "accounts": [
     {
-      "name": "TreasuryAccount",
+      "name": "treasuryAccount",
       "discriminator": [
         204,
         140,
@@ -268,7 +268,7 @@
       }
     },
     {
-      "name": "ProposalAccount",
+      "name": "proposalAccount",
       "discriminator": [
         164,
         190,
@@ -302,7 +302,7 @@
             "name": "category",
             "type": {
               "defined": {
-                "name": "ProposalCategory"
+                "name": "proposalCategory"
               }
             }
           },
@@ -314,7 +314,7 @@
             "name": "status",
             "type": {
               "defined": {
-                "name": "ProposalStatus"
+                "name": "proposalStatus"
               }
             }
           },
@@ -366,7 +366,7 @@
   ],
   "types": [
     {
-      "name": "ProposalStatus",
+      "name": "proposalStatus",
       "type": {
         "kind": "enum",
         "variants": [
@@ -386,7 +386,7 @@
       }
     },
     {
-      "name": "ProposalCategory",
+      "name": "proposalCategory",
       "type": {
         "kind": "enum",
         "variants": [
