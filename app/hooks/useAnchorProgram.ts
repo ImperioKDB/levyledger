@@ -5,7 +5,7 @@ import type { Idl } from '@coral-xyz/anchor'
 import idlRaw from '@/lib/idl/levyledger.json'
 
 // FIX: corrected to match the actually-deployed program (was stale).
-const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
+const PROGRAM_ID_STR = '4Av48RVmUb2U5V3jqkEC15C5cbjNRY2TqD64ebc1jn1M'
 
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
