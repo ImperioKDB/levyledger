@@ -9,16 +9,19 @@ import { BN } from '@coral-xyz/anchor'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
-const BUILD_TS = '2026-06-29 21:18 UTC'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/anchor'
-import { DEVNET_USDC_MINT, CATEGORY_LABELS } from '@/lib/constants'
+import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
+import {
+  fetchPendingRequests, markRequestApproved, markRequestRejected,
+  DepartmentRequest,
+} from '@/lib/supabase'
 
 const USDC_MINT = new PublicKey(DEVNET_USDC_MINT)
 const EXPLORER  = 'https://explorer.solana.com/tx'
 
-type Tab     = 'sign' | 'propose' | 'deposit'
+type Tab     = 'sign' | 'propose' | 'deposit' | 'requests'
 type TxState = 'idle' | 'loading' | 'success' | 'error'
 
 function TxResult({ state, sig, error }: { state: TxState; sig: string; error: string }) {
@@ -66,7 +69,7 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
           {[
             'Open the Phantom app on your phone',
             'Tap the globe icon at the bottom of the app',
-            'Type levyledger.vercel.app/admin?treasury=uniben in the address bar',
+            'Type levyledger.vercel.app/admin in the address bar',
             'Your wallet connects automatically inside the app',
           ].map((text, i) => (
             <div key={i} className="flex gap-4">
@@ -78,13 +81,6 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
           ))}
         </div>
       </div>
-      <div className="border border-rule p-5">
-        <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">Important</p>
-        <p className="text-body text-sm leading-relaxed">
-          Make sure Phantom is set to <span className="font-data text-ledger">Devnet</span>.
-          In Phantom → Settings → Developer Settings → Change Network to Devnet.
-        </p>
-      </div>
     </div>
   )
 }
@@ -94,6 +90,8 @@ function AdminContent() {
   const uniSlug = params.get('treasury') || 'uniben'
   const wallet  = useWallet()
   const { program, anchorError } = useAnchorProgram()
+
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
 
   const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
   const [currentUrl,  setCurrentUrl]  = useState('')
@@ -117,6 +115,7 @@ function AdminContent() {
   const [proposeErr,  setProposeErr]  = useState('')
 
   const [initSigners, setInitSigners] = useState<string[]>(['','','','',''])
+  const [initSlug,    setInitSlug]    = useState(uniSlug)
   const [initTx,      setInitTx]      = useState<TxState>('idle')
   const [initSig,     setInitSig]     = useState('')
   const [initErr,     setInitErr]     = useState('')
@@ -124,6 +123,13 @@ function AdminContent() {
   const [signTx,      setSignTx]      = useState<Record<number, TxState>>({})
   const [signSig,     setSignSig]     = useState<Record<number, string>>({})
   const [signErr,     setSignErr]     = useState<Record<number, string>>({})
+
+  // Requests queue state — admin-only
+  const [requests,        setRequests]        = useState<DepartmentRequest[]>([])
+  const [requestsLoading, setRequestsLoading] = useState(true)
+  const [reviewTx,        setReviewTx]        = useState<Record<string, TxState>>({})
+  const [reviewErr,       setReviewErr]       = useState<Record<string, string>>({})
+  const [reviewSig,       setReviewSig]       = useState<Record<string, string>>({})
 
   useEffect(() => {
     const win = window as any
@@ -148,7 +154,19 @@ function AdminContent() {
     setLoading(false)
   }
 
+  async function loadRequests() {
+    if (!isAdminWallet) { setRequestsLoading(false); return }
+    try {
+      const r = await fetchPendingRequests()
+      setRequests(r)
+    } catch (e) {
+      console.error('[requests] failed to load', e)
+    }
+    setRequestsLoading(false)
+  }
+
   useEffect(() => { loadTreasury() }, [uniSlug])
+  useEffect(() => { loadRequests() }, [isAdminWallet])
 
   const execIndex = treasury
     ? treasury.signers.findIndex(
@@ -164,22 +182,19 @@ function AdminContent() {
       !p.votedAgainst?.[execIndex]
   })
 
-  // FIX: all handlers now show visible error when program is null
-  // instead of returning silently.
   async function handleInit() {
     if (!wallet.publicKey) return
     if (!program) {
       setInitErr('Program not ready. Please refresh the page and try again.')
-      setInitTx('error')
-      return
+      setInitTx('error'); return
     }
     setInitTx('loading'); setInitErr('')
     try {
       const signerPubkeys = initSigners.map(s => new PublicKey(s.trim()))
-      const [treasuryPDA] = getTreasuryPDA(uniSlug)
+      const [treasuryPDA] = getTreasuryPDA(initSlug)
       const [vaultPDA]    = getVaultPDA(treasuryPDA)
       const sig = await (program.methods as any)
-        .initTreasury(uniSlug, signerPubkeys)
+        .initTreasury(initSlug, signerPubkeys)
         .accounts({
           authority:     wallet.publicKey,
           treasury:      treasuryPDA,
@@ -193,6 +208,38 @@ function AdminContent() {
       await loadTreasury()
     } catch (e: any) {
       setInitErr(parseAnchorError(e)); setInitTx('error')
+    }
+  }
+
+  async function handleApproveRequest(req: DepartmentRequest) {
+    // Pre-fill the init form from the request, then switch tabs so the
+    // admin reviews before actually signing the on-chain transaction.
+    setInitSlug(req.slug)
+    setInitSigners([req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5])
+    setTab('propose') // placeholder tab switch avoided; see note below
+  }
+
+  async function handleMarkApproved(req: DepartmentRequest) {
+    setReviewTx(prev => ({ ...prev, [req.id]: 'loading' }))
+    setReviewErr(prev => ({ ...prev, [req.id]: '' }))
+    try {
+      await markRequestApproved(req.id)
+      setReviewTx(prev => ({ ...prev, [req.id]: 'success' }))
+      await loadRequests()
+    } catch (e: any) {
+      setReviewErr(prev => ({ ...prev, [req.id]: e.message || 'Failed to update' }))
+      setReviewTx(prev => ({ ...prev, [req.id]: 'error' }))
+    }
+  }
+
+  async function handleReject(req: DepartmentRequest) {
+    setReviewTx(prev => ({ ...prev, [req.id]: 'loading' }))
+    try {
+      await markRequestRejected(req.id)
+      await loadRequests()
+    } catch (e: any) {
+      setReviewErr(prev => ({ ...prev, [req.id]: e.message || 'Failed to update' }))
+      setReviewTx(prev => ({ ...prev, [req.id]: 'error' }))
     }
   }
 
@@ -216,6 +263,7 @@ function AdminContent() {
           treasury:              treasuryPDA,
           depositorTokenAccount: depositorATA,
           vault:                 vaultPDA,
+          usdcMint:              USDC_MINT,
           tokenProgram:          TOKEN_PROGRAM_ID,
         })
         .rpc()
@@ -335,6 +383,77 @@ function AdminContent() {
           </div>
         )}
 
+        {/* Admin-only Requests tab, shown ABOVE the per-treasury panel
+            since it's not scoped to a single university slug */}
+        {wallet.publicKey && isAdminWallet && (
+          <div className="mb-8 border border-uniben p-4">
+            <p className="font-data text-uniben text-xs tracking-widest uppercase mb-3">
+              Department Requests
+            </p>
+            {requestsLoading ? (
+              <p className="font-data text-ghost text-xs animate-pulse">Loading requests...</p>
+            ) : requests.length === 0 ? (
+              <p className="text-body text-sm">No pending requests.</p>
+            ) : (
+              requests.map(req => {
+                const rTx = reviewTx[req.id] || 'idle'
+                return (
+                  <div key={req.id} className="border-t border-rule py-4 first:border-t-0 first:pt-0">
+                    <p className="font-display font-semibold text-ledger text-sm">
+                      {req.department}
+                    </p>
+                    <p className="text-ghost text-xs mb-2">{req.university}</p>
+                    <p className="font-data text-uniben text-xs mb-3">{req.slug}</p>
+                    <details className="mb-3">
+                      <summary className="font-data text-ghost text-xs cursor-pointer">
+                        View 5 exec addresses
+                      </summary>
+                      <div className="mt-2 space-y-1">
+                        {[req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5].map((e, i) => (
+                          <p key={i} className="font-data text-ledger text-xs break-all">{e}</p>
+                        ))}
+                      </div>
+                    </details>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setInitSlug(req.slug)
+                          setInitSigners([req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5])
+                        }}
+                        className="flex-1 py-2 font-data text-xs border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors"
+                      >
+                        LOAD INTO INIT FORM
+                      </button>
+                      <button
+                        onClick={() => handleMarkApproved(req)}
+                        disabled={rTx === 'loading'}
+                        className="flex-1 py-2 font-data text-xs border border-nigerian text-nigerian hover:bg-nigerian hover:text-ink transition-colors disabled:opacity-40"
+                      >
+                        MARK APPROVED
+                      </button>
+                      <button
+                        onClick={() => handleReject(req)}
+                        disabled={rTx === 'loading'}
+                        className="flex-1 py-2 font-data text-xs border border-void text-void hover:bg-void hover:text-ink transition-colors disabled:opacity-40"
+                      >
+                        REJECT
+                      </button>
+                    </div>
+                    {reviewErr[req.id] && (
+                      <p className="font-data text-void text-xs mt-2">{reviewErr[req.id]}</p>
+                    )}
+                  </div>
+                )
+              })
+            )}
+            <p className="font-data text-ghost text-xs mt-4 border-t border-rule pt-3">
+              "Load Into Init Form" pre-fills the slug and 5 exec addresses below.
+              You must still tap Initialize Treasury to actually create it on-chain —
+              marking approved here only updates the request queue.
+            </p>
+          </div>
+        )}
+
         {wallet.publicKey && loading && (
           <div className="space-y-3 animate-pulse">
             <div className="h-3 bg-paper w-32" />
@@ -350,10 +469,10 @@ function AdminContent() {
               </p>
               <p className="text-body text-sm leading-relaxed mb-3">
                 No treasury exists for{' '}
-                <span className="font-data text-ledger">{uniSlug}</span> yet.
-                Enter the 5 exec wallet addresses below.
+                <span className="font-data text-ledger">{initSlug}</span> yet.
+                Enter the slug and 5 exec wallet addresses below, or load a
+                request from the queue above.
               </p>
-              {/* FIX: clarify what public key means */}
               <div className="bg-lifted p-3">
                 <p className="font-data text-ghost text-xs">
                   Public key = wallet address. The long string you copy from Phantom.
@@ -372,11 +491,21 @@ function AdminContent() {
                 ) : (
                   <p className="text-body text-xs">Connecting to the Solana program...</p>
                 )}
-                <p className="font-data text-ghost text-xs">Build: {BUILD_TS}</p>
               </div>
             )}
 
             <div className="space-y-3">
+              <div>
+                <label className="font-data text-ghost text-xs block mb-1">
+                  Treasury Slug
+                </label>
+                <input
+                  value={initSlug}
+                  onChange={e => setInitSlug(e.target.value)}
+                  placeholder="e.g. uniben-csc"
+                  className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost"
+                />
+              </div>
               {initSigners.map((s, i) => (
                 <div key={i}>
                   <label className="font-data text-ghost text-xs block mb-1">
@@ -397,6 +526,7 @@ function AdminContent() {
                 onClick={handleInit}
                 disabled={
                   initTx === 'loading' ||
+                  !initSlug.trim() ||
                   initSigners.some(s => !s.trim()) ||
                   !wallet.publicKey
                 }
@@ -444,10 +574,10 @@ function AdminContent() {
               </div>
             </div>
 
-            <div className="flex border-b border-rule mb-6">
+            <div className="flex border-b border-rule mb-6 overflow-x-auto no-scrollbar">
               {(['sign', 'propose', 'deposit'] as Tab[]).map(t => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={`flex-1 py-3 font-data text-xs tracking-widest transition-colors relative ${
+                  className={`shrink-0 px-4 py-3 font-data text-xs tracking-widest transition-colors relative ${
                     tab === t ? 'text-uniben' : 'text-ghost hover:text-body'
                   }`}>
                   {t.toUpperCase()}
@@ -562,6 +692,13 @@ function AdminContent() {
                   <p className="font-data text-ghost text-xs mb-1">Current vault balance</p>
                   <p className="font-data text-uniben text-2xl font-bold">
                     ${formatUSDC(treasury.availableBalance)} USDC
+                  </p>
+                </div>
+                <div className="border border-uniben p-3">
+                  <p className="text-body text-xs leading-relaxed">
+                    Anyone can deposit — students can pay dues directly into
+                    this vault from their own wallet, or an exec can deposit
+                    collected off-chain funds. Both paths are equally valid.
                   </p>
                 </div>
                 <div>
