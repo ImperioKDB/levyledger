@@ -1,5 +1,5 @@
 // FIX: corrected to match the actually-deployed program (was stale).
-export const PROGRAM_ID       = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
+export const PROGRAM_ID       = '4Av48RVmUb2U5V3jqkEC15C5cbjNRY2TqD64ebc1jn1M'
 export const DEVNET_USDC_MINT = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'
 export const ADMIN_KEY        = '4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N'
 
