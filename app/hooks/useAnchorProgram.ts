@@ -4,9 +4,7 @@ import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import type { Idl } from '@coral-xyz/anchor'
 import idlRaw from '@/lib/idl/levyledger.json'
 
-// FIX: corrected to match the actually-deployed program (was stale).
 const PROGRAM_ID_STR = '4Av48RVmUb2U5V3jqkEC15C5cbjNRY2TqD64ebc1jn1M'
-
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
 export function useAnchorProgram() {
@@ -14,17 +12,20 @@ export function useAnchorProgram() {
   const wallet = useWallet()
 
   return useMemo(() => {
-    if (!wallet.publicKey) return null
+    if (!wallet.publicKey) {
+      return { program: null, anchorError: null }
+    }
     try {
       const provider = new AnchorProvider(
         connection,
         wallet as any,
         { commitment: 'confirmed', preflightCommitment: 'confirmed' }
       )
-      return new Program(IDL, provider)
+      return { program: new Program(IDL, provider), anchorError: null }
     } catch (err) {
       console.error('[useAnchorProgram] init failed:', err)
-      return null
+      const msg = err instanceof Error ? err.message : String(err)
+      return { program: null, anchorError: msg }
     }
   }, [connection, wallet.publicKey, wallet.connected])
 }
