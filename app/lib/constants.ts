@@ -1,7 +1,6 @@
-// FIX: corrected to match the actually-deployed program (was stale).
-export const PROGRAM_ID       = '4Av48RVmUb2U5V3jqkEC15C5cbjNRY2TqD64ebc1jn1M'
+export const PROGRAM_ID       = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
 export const DEVNET_USDC_MINT = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'
-export const ADMIN_KEY        = '4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N'
+export const ADMIN_KEY         = '4enpQEjX2bLFcXtPkcFg9f5WDkq9j1Q8zNoN5xAF5m1N'
 
 export const CATEGORY_LABELS: Record<string, string> = {
   welfare:   'Welfare',
@@ -18,6 +17,8 @@ export const STATUS_COLORS: Record<string, string> = {
   expired:  'text-ghost    border-ghost',
 }
 
+// Static fallback — dynamic directory (from approved requests) supersedes
+// this on the landing page once Feature: dynamic directory ships.
 export const UNIVERSITIES: Record<string, string> = {
   uniben: 'University of Benin',
   unilag: 'University of Lagos',
