@@ -6,7 +6,7 @@ import idlRaw from './idl/levyledger.json'
 // FIX: corrected to the actually-deployed program ID. Was previously
 // pointing to a stale ID from an earlier Playground re-import, which
 // caused every PDA + RPC call to target the wrong (or nonexistent) program.
-const PROGRAM_ID_STR = '4tsVfoyorSMTHG6iBG1kBtxsjTFWUfRNe1We26bfBFD9'
+const PROGRAM_ID_STR = '4Av48RVmUb2U5V3jqkEC15C5cbjNRY2TqD64ebc1jn1M'
 const PROGRAM_ID     = new PublicKey(PROGRAM_ID_STR)
 const RPC_URL        = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
 
