@@ -366,6 +366,24 @@ function AdminContent() {
           {uniSlug.toUpperCase()} Admin
         </h1>
 
+        {/* DEVNET SIMULATION WARNING */}
+        <div className="border border-pending bg-paper px-4 py-3 mb-6 flex gap-3 items-start">
+          <span className="font-data text-pending text-xs mt-0.5">!</span>
+          <div>
+            <p className="font-data text-pending text-xs tracking-widest uppercase mb-1">
+              Devnet Notice
+            </p>
+            <p className="text-body text-xs leading-relaxed">
+              Phantom may show a{' '}
+              <span className="font-data text-ledger">&#34;Failed to simulate&#34;</span>{' '}
+              warning on devnet. This is expected behaviour&#8202;&#8202;&#8212;&#8202;&#8202;not an error.
+              Tap{' '}
+              <span className="font-data text-ledger">Yes, confirm (unsafe)</span>{' '}
+              to proceed. All funds here are test tokens with no real value.
+            </p>
+          </div>
+        </div>
+
         {needsPhantomGuide && !wallet.publicKey && (
           <MobileWalletGate currentUrl={currentUrl} />
         )}
