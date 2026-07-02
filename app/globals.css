@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink:      #0D0D0D;
+  --paper:    #111111;
+  --lifted:   #161616;
+  --rule:     #1F1F1F;
+  --ghost:    #71717A;
+  --body:     #A1A1AA;
+  --ledger:   #FFFFFF;
+  --uniben:   #008751;
+  --nigerian: #008751;
+  --void:     #DC2626;
+  --pending:  #F59E0B;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+html {
+  background-color: var(--ink);
+  color: var(--ledger);
+  font-family: var(--font-body), 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--ink);
+  color: var(--ledger);
+  min-height: 100svh;
+  padding: 0;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 1px solid var(--uniben);
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: var(--uniben);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: var(--ink); }
+::-webkit-scrollbar-thumb  { background: var(--rule); }
+::-webkit-scrollbar-thumb:hover { background: var(--ghost); }
+
+@keyframes page-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.page-enter { animation: page-in 150ms ease-out both; }
+
+@keyframes slot-sign {
+  from { opacity: 0.3; }
+  to   { opacity: 1; }
+}
+.slot-signed { animation: slot-sign 300ms ease-out both; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.wallet-adapter-button {
+  font-family: var(--font-data), 'Space Mono', monospace !important;
+  background: transparent !important;
+  border: 1px solid var(--rule) !important;
+  color: var(--ledger) !important;
+  font-size: 12px !important;
+  padding: 8px 16px !important;
+  letter-spacing: 0.05em !important;
+  transition: border-color 150ms, color 150ms !important;
+}
+.wallet-adapter-button:hover {
+  border-color: var(--uniben) !important;
+  color: var(--uniben) !important;
+  background: transparent !important;
+}
+.wallet-adapter-button:not([disabled]):hover {
+  background: transparent !important;
+}
+.wallet-adapter-modal-wrapper {
+  background: var(--paper) !important;
+  border: 1px solid var(--rule) !important;
+}
+.wallet-adapter-modal-title {
+  font-family: var(--font-display), 'Space Grotesk', sans-serif !important;
+  color: var(--ledger) !important;
+}
+.wallet-adapter-modal-list li            { background: var(--lifted) !important; }
+.wallet-adapter-modal-list li:hover      { background: var(--rule)   !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
