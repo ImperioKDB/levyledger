@@ -9,7 +9,7 @@ import { BN } from '@coral-xyz/anchor'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
-import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
+import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError } from '@/lib/queries'
 import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/anchor'
 import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
@@ -491,6 +491,16 @@ function AdminContent() {
                 Enter the slug and 5 exec wallet addresses below, or load a
                 request from the queue above.
               </p>
+              {getLastTreasuryFetchError() && (
+                <div className="bg-lifted border border-void p-3 mb-3">
+                  <p className="font-data text-void text-xs tracking-widest uppercase mb-1">
+                    Debug: Fetch Error
+                  </p>
+                  <p className="font-data text-void text-xs break-all">
+                    {getLastTreasuryFetchError()}
+                  </p>
+                </div>
+              )}
               <div className="bg-lifted p-3">
                 <p className="font-data text-ghost text-xs">
                   Public key = wallet address. The long string you copy from Phantom.
