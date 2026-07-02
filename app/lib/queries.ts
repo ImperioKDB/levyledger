@@ -1,15 +1,24 @@
 import { PublicKey } from '@solana/web3.js'
 import { getReadonlyProgram, getTreasuryPDA, getProposalPDA } from './anchor'
 
+let lastTreasuryFetchError: string | null = null
+
+export function getLastTreasuryFetchError() {
+  return lastTreasuryFetchError
+}
+
 export async function fetchTreasury(slug: string) {
   try {
     const program = getReadonlyProgram()
     const accounts = (program.account as any)
     const [pda] = getTreasuryPDA(slug)
     const data = await accounts.treasuryAccount.fetch(pda)
+    lastTreasuryFetchError = null
     return { pda, ...data }
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
     console.error('[fetchTreasury] failed for slug=' + slug + ':', err)
+    lastTreasuryFetchError = msg
     return null
   }
 }
