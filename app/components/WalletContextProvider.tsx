@@ -11,7 +11,6 @@ import '@solana/wallet-adapter-react-ui/styles.css'
 
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
 
-// Cast to any to fix React 18 + wallet-adapter type mismatch
 const CP = ConnectionProvider as any
 const WP = WalletProvider as any
 const WMP = WalletModalProvider as any
