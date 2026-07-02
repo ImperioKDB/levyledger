@@ -49,11 +49,7 @@ pub mod levyledger {
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         require!(amount > 0, LevyError::AmountZero);
-        let depositor_key = ctx.accounts.depositor.key();
-        require!(
-            ctx.accounts.treasury.signers.contains(&depositor_key),
-            LevyError::UnauthorizedSigner
-        );
+        // Hybrid deposit: any wallet can deposit directly, not just execs.
         require!(
             ctx.accounts.depositor_token_account.mint == ctx.accounts.usdc_mint.key(),
             LevyError::InvalidMint
