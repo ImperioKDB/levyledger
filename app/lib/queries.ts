@@ -8,7 +8,8 @@ export async function fetchTreasury(slug: string) {
     const [pda] = getTreasuryPDA(slug)
     const data = await accounts.treasuryAccount.fetch(pda)
     return { pda, ...data }
-  } catch {
+  } catch (err) {
+    console.error('[fetchTreasury] failed for slug=' + slug + ':', err)
     return null
   }
 }
