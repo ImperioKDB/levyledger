@@ -183,6 +183,12 @@ function AdminContent() {
       !p.votedAgainst?.[execIndex]
   })
 
+  useEffect(() => {
+    if (treasury && !isExec && (tab === 'sign' || tab === 'propose')) {
+      setTab('deposit')
+    }
+  }, [treasury, isExec, tab])
+
   async function handleInit() {
     if (!wallet.publicKey) return
     if (!program) {
@@ -586,22 +592,7 @@ function AdminContent() {
           </div>
         )}
 
-        {wallet.publicKey && !loading && treasury && !isExec && (
-          <div className="border border-rule p-6 space-y-4">
-            <p className="font-data text-void text-xs tracking-widest uppercase">Not Authorized</p>
-            <p className="text-body text-sm leading-relaxed">
-              This wallet is not registered as an exec for this treasury.
-            </p>
-            <div className="border-t border-rule pt-4">
-              <p className="font-data text-ghost text-xs mb-1">Connected</p>
-              <p className="font-data text-ledger text-xs break-all">
-                {wallet.publicKey.toString()}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {wallet.publicKey && !loading && treasury && isExec && (
+        {wallet.publicKey && !loading && treasury && (
           <div>
             <div className="border border-rule p-4 mb-6 flex items-center justify-between">
               <div>
@@ -622,7 +613,7 @@ function AdminContent() {
             </div>
 
             <div className="flex border-b border-rule mb-6 overflow-x-auto no-scrollbar">
-              {(['sign', 'propose', 'deposit'] as Tab[]).map(t => (
+              {(isExec ? ['sign', 'propose', 'deposit'] : ['deposit']) as Tab[]).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={`shrink-0 px-4 py-3 font-data text-xs tracking-widest transition-colors relative ${
                     tab === t ? 'text-uniben' : 'text-ghost hover:text-body'
@@ -636,7 +627,7 @@ function AdminContent() {
               ))}
             </div>
 
-            {tab === 'sign' && (
+            {tab === 'sign' && isExec && (
               <div>
                 {pendingProposals.length === 0 ? (
                   <div className="pt-6 text-center">
@@ -687,7 +678,7 @@ function AdminContent() {
               </div>
             )}
 
-            {tab === 'propose' && (
+            {tab === 'propose' && isExec && (
               <div className="space-y-4">
                 <div className="border-b border-rule pb-4">
                   <p className="font-data text-ghost text-xs mb-1">Available to spend</p>
