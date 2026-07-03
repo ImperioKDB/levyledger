@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
@@ -24,7 +24,7 @@ function fmtTimestamp(ts: any): string {
 
 const EXEC_TITLES = ['President', 'Treasurer', 'Financial Secretary', 'General Secretary', 'Auditor']
 
-export default function ProposalDetailPage() {
+function ProposalDetailContent() {
   const { id } = useParams() as { id: string }
   const searchParams = useSearchParams()
   const uniSlug = searchParams.get('treasury') || 'uniben'
@@ -183,5 +183,13 @@ export default function ProposalDetailPage() {
 
       <BottomNav />
     </main>
+  )
+}
+
+export default function ProposalDetailPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-ink" />}>
+      <ProposalDetailContent />
+    </Suspense>
   )
 }
