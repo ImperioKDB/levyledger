@@ -4,16 +4,16 @@
 
 :root {
   --ink:      #0D0D0D;
-  --paper:    #141414;
-  --lifted:   #1C1C1C;
-  --rule:     #2A2A2A;
-  --ghost:    #888888;   /* FIX: was #666666 — failed 4.5:1 contrast */
-  --body:     #C8C8C8;
-  --ledger:   #F0F0F0;
-  --uniben:   #9966FF;   /* UNIBEN purple — primary accent, 5.7:1 on --ink */
-  --nigerian: #008751;   /* Nigerian green — EXECUTED status only */
-  --void:     #C0392B;
-  --pending:  #B8860B;
+  --paper:    #111111;
+  --lifted:   #161616;
+  --rule:     #1F1F1F;
+  --ghost:    #71717A;
+  --body:     #A1A1AA;
+  --ledger:   #FFFFFF;
+  --uniben:   #008751;
+  --nigerian: #008751;
+  --void:     #DC2626;
+  --pending:  #F59E0B;
 }
 
 *,
