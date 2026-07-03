@@ -49,11 +49,7 @@ pub mod levyledger {
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         require!(amount > 0, LevyError::AmountZero);
-        // Hybrid deposit: any wallet can deposit directly, not just execs.
-        require!(
-            ctx.accounts.depositor_token_account.mint == ctx.accounts.usdc_mint.key(),
-            LevyError::InvalidMint
-        );
+        
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             anchor_spl::token::Transfer {
@@ -63,6 +59,7 @@ pub mod levyledger {
             },
         );
         anchor_spl::token::transfer(cpi_ctx, amount)?;
+        
         ctx.accounts.treasury.available_balance = ctx.accounts.treasury.available_balance
             .checked_add(amount).ok_or(LevyError::Overflow)?;
         ctx.accounts.treasury.total_deposited = ctx.accounts.treasury.total_deposited
@@ -148,11 +145,17 @@ pub mod levyledger {
             LevyError::ProposalNotActive
         );
 
+        // Mutually exclusive voting checks: prevent dual-voting state corruption
+        require!(
+            !ctx.accounts.proposal.signed_by[signer_index],
+            LevyError::AlreadySigned
+        );
+        require!(
+            !ctx.accounts.proposal.voted_against[signer_index],
+            LevyError::AlreadyVotedAgainst
+        );
+
         if approve {
-            require!(
-                !ctx.accounts.proposal.signed_by[signer_index],
-                LevyError::AlreadySigned
-            );
             ctx.accounts.proposal.signed_by[signer_index] = true;
             ctx.accounts.proposal.signatures_for += 1;
 
@@ -186,14 +189,6 @@ pub mod levyledger {
                 ctx.accounts.proposal.status = ProposalStatus::Executed;
             }
         } else {
-            require!(
-                !ctx.accounts.proposal.signed_by[signer_index],
-                LevyError::AlreadySigned
-            );
-            require!(
-                !ctx.accounts.proposal.voted_against[signer_index],
-                LevyError::AlreadyVotedAgainst
-            );
             ctx.accounts.proposal.voted_against[signer_index] = true;
             ctx.accounts.proposal.signatures_against += 1;
 
@@ -214,7 +209,7 @@ pub mod levyledger {
         let clock = Clock::get()?;
         require!(
             clock.unix_timestamp > ctx.accounts.proposal.expires_at,
-            LevyError::ProposalNotActive
+            LevyError::ProposalNotExpired
         );
         require!(
             ctx.accounts.proposal.status == ProposalStatus::Active,
@@ -273,12 +268,16 @@ pub struct Deposit<'info> {
         bump = treasury.bump
     )]
     pub treasury: Account<'info, TreasuryAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = depositor_token_account.mint == usdc_mint.key() @ LevyError::InvalidMint
+    )]
     pub depositor_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
         seeds = [b"vault", treasury.key().as_ref()],
-        bump = treasury.vault_bump
+        bump = treasury.vault_bump,
+        constraint = vault.mint == usdc_mint.key() @ LevyError::InvalidMint
     )]
     pub vault: Account<'info, TokenAccount>,
     pub usdc_mint: Account<'info, Mint>,
@@ -331,7 +330,11 @@ pub struct SignProposal<'info> {
         bump = treasury.vault_bump
     )]
     pub vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = recipient_token_account.owner == proposal.recipient @ LevyError::InvalidRecipient,
+        constraint = recipient_token_account.mint == vault.mint @ LevyError::InvalidMint
+    )]
     pub recipient_token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
@@ -368,7 +371,9 @@ pub struct TreasuryAccount {
 }
 
 impl TreasuryAccount {
-    pub const SPACE: usize = 300;
+    // Discriminator (8) + String (4 + 20) + Signers (32 * 5) + Threshold (1)
+    // Balance Fields (8 * 6) + Bumps (1 + 1) = 242 bytes. Space 260 leaves safe margin.
+    pub const SPACE: usize = 260;
 }
 
 #[account]
@@ -391,7 +396,10 @@ pub struct ProposalAccount {
 }
 
 impl ProposalAccount {
-    pub const SPACE: usize = 420;
+    // Discriminator (8) + Pubkeys (32 * 3) + Amount (8) + Category (1) 
+    // String (4 + 200) + Status (1) + Vote Masks (5 + 5) + Vote Counters (1 + 1)
+    // Index (8) + Timestamps (8 * 2) + Bump (1) = 355 bytes. Space 380 leaves safe margin.
+    pub const SPACE: usize = 380;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
@@ -425,6 +433,8 @@ pub enum LevyError {
     ProposalNotActive,
     #[msg("Proposal has expired without reaching threshold")]
     ProposalExpired,
+    #[msg("Proposal has not expired yet")]
+    ProposalNotExpired,
     #[msg("Insufficient available balance in vault for this proposal")]
     InsufficientFunds,
     #[msg("University slug must be 1-20 characters")]
@@ -439,6 +449,8 @@ pub enum LevyError {
     InvalidSigners,
     #[msg("Deposit token account does not match the USDC mint")]
     InvalidMint,
+    #[msg("Recipient token account does not match proposal recipient")]
+    InvalidRecipient,
     #[msg("Arithmetic overflow")]
     Overflow,
 }
