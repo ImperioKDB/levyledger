@@ -2,23 +2,45 @@ import { PublicKey } from '@solana/web3.js'
 import { getReadonlyProgram, getTreasuryPDA, getProposalPDA } from './anchor'
 
 let lastTreasuryFetchError: string | null = null
+let lastTreasuryFetchStack: string | null = null
 
 export function getLastTreasuryFetchError() {
   return lastTreasuryFetchError
 }
 
+export function getLastTreasuryFetchStack() {
+  return lastTreasuryFetchStack
+}
+
+export function getBundledIdlAccountNames(): string {
+  try {
+    const idl = require('./idl/levyledger.json')
+    return (idl.accounts || []).map((a: any) => a.name).join(', ')
+  } catch (e) {
+    return 'IDL_IMPORT_FAILED: ' + String(e)
+  }
+}
+
 export async function fetchTreasury(slug: string) {
   try {
     const program = getReadonlyProgram()
+    if (!program) {
+      lastTreasuryFetchError = 'program is null/undefined'
+      lastTreasuryFetchStack = null
+      return null
+    }
     const accounts = (program.account as any)
     const [pda] = getTreasuryPDA(slug)
     const data = await accounts.treasuryAccount.fetch(pda)
     lastTreasuryFetchError = null
+    lastTreasuryFetchStack = null
     return { pda, ...data }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? (err.stack || 'no stack') : 'not an Error instance'
     console.error('[fetchTreasury] failed for slug=' + slug + ':', err)
     lastTreasuryFetchError = msg
+    lastTreasuryFetchStack = stack
     return null
   }
 }
