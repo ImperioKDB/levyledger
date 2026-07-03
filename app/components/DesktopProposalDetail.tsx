@@ -4,8 +4,6 @@ import StatusBadge from './StatusBadge'
 import { formatUSDC, abbreviate } from '@/lib/anchor'
 import { CATEGORY_LABELS } from '@/lib/constants'
 
-const EXEC_TITLES = ['President', 'Treasurer', 'Financial Secretary', 'General Secretary', 'Auditor']
-
 function fmtTimestamp(ts: any): string {
   const s = typeof ts?.toNumber === 'function' ? ts.toNumber() : Number(ts)
   if (isNaN(s)) return '—'
@@ -72,7 +70,7 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
           {treasury?.signers?.map((signer: any, i: number) => {
             const votedFor = proposal.signedBy?.[i]
             const votedAgainst = proposal.votedAgainst?.[i]
-            const title = EXEC_TITLES[i] || ('Exec ' + (i + 1))
+            const title = 'Signer ' + (i + 1)
             return (
               <div
                 key={i}
