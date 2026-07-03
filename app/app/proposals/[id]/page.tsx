@@ -25,8 +25,6 @@ function fmtTimestamp(ts: any): string {
   })
 }
 
-const EXEC_TITLES = ['President', 'Treasurer', 'Financial Secretary', 'General Secretary', 'Auditor']
-
 function ProposalDetailContent() {
   const { id } = useParams() as { id: string }
   const searchParams = useSearchParams()
@@ -119,7 +117,7 @@ function ProposalDetailContent() {
                   {treasury?.signers?.map((signer: any, i: number) => {
                     const votedFor = proposal.signedBy?.[i]
                     const votedAgainst = proposal.votedAgainst?.[i]
-                    const title = EXEC_TITLES[i] || `Exec ${i + 1}`
+                    const title = 'Signer ' + (i + 1)
                     return (
                       <div key={i} className="flex items-center gap-3 border border-rule p-3 bg-paper">
                         <span className={`w-8 h-8 flex items-center justify-center border ${
