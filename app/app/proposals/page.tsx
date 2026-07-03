@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
@@ -14,7 +14,7 @@ import { formatUSDC } from '@/lib/anchor'
 type Filter = 'all' | 'active' | 'executed' | 'rejected' | 'expired'
 const FILTERS: Filter[] = ['all', 'active', 'executed', 'rejected', 'expired']
 
-export default function ProposalsPage() {
+function ProposalsContent() {
   const searchParams = useSearchParams()
   const uniSlug = searchParams.get('treasury') || 'uniben'
   const [filter, setFilter] = useState<Filter>('all')
@@ -107,5 +107,13 @@ export default function ProposalsPage() {
 
       <BottomNav />
     </main>
+  )
+}
+
+export default function ProposalsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-ink" />}>
+      <ProposalsContent />
+    </Suspense>
   )
 }
