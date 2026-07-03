@@ -10,8 +10,6 @@ import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopMembersList from '@/components/DesktopMembersList'
 
-const EXEC_TITLES = ['President', 'Treasurer', 'Financial Secretary', 'General Secretary', 'Auditor']
-
 interface Member {
   address: string
   title: string
@@ -42,7 +40,7 @@ export default function MembersPage() {
         })
         return {
           address: signer.toString(),
-          title: EXEC_TITLES[i] || ('Exec ' + (i + 1)),
+          title: 'Signer ' + (i + 1),
           signed,
           rejected,
         }
@@ -75,10 +73,14 @@ export default function MembersPage() {
                   <div key={i} className="border border-rule bg-paper p-4">
                     <p className="font-display font-semibold text-ledger text-sm mb-1">{m.title}</p>
                     <p className="font-data text-ghost text-xs break-all mb-3">{m.address}</p>
-                    <div className="flex gap-4">
-                      <span className="font-data text-nigerian text-xs">{m.signed} signed</span>
-                      <span className="font-data text-void text-xs">{m.rejected} rejected</span>
-                    </div>
+                    {m.signed === 0 && m.rejected === 0 ? (
+                      <p className="font-data text-ghost text-xs">No activity yet</p>
+                    ) : (
+                      <div className="flex gap-4">
+                        <span className="font-data text-nigerian text-xs">{m.signed} signed</span>
+                        <span className="font-data text-void text-xs">{m.rejected} rejected</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
