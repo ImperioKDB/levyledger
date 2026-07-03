@@ -9,7 +9,7 @@ import { BN } from '@coral-xyz/anchor'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
-import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError } from '@/lib/queries'
+import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError, getLastTreasuryFetchStack, getBundledIdlAccountNames } from '@/lib/queries'
 import * as AnchorPkg from '@coral-xyz/anchor'
 import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/anchor'
 import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
@@ -500,11 +500,23 @@ function AdminContent() {
                   <p className="font-data text-void text-xs break-all">
                     {getLastTreasuryFetchError()}
                   </p>
-                  <p className="font-data text-void text-xs mt-2">
-                    anchor pkg keys: {Object.keys(AnchorPkg).slice(0, 15).join(', ')}
+                  <p className="font-data text-void text-xs mt-2 tracking-widest uppercase">
+                    Bundled IDL accounts
+                  </p>
+                  <p className="font-data text-void text-xs break-all">
+                    {getBundledIdlAccountNames()}
+                  </p>
+                  <p className="font-data text-void text-xs mt-2 tracking-widest uppercase">
+                    Has Program export
                   </p>
                   <p className="font-data text-void text-xs">
-                    version: {(AnchorPkg as any).VERSION || 'unknown'}
+                    {String('Program' in AnchorPkg)} (total exports: {Object.keys(AnchorPkg).length})
+                  </p>
+                  <p className="font-data text-void text-xs mt-2 tracking-widest uppercase">
+                    Stack
+                  </p>
+                  <p className="font-data text-void text-xs break-all whitespace-pre-wrap">
+                    {getLastTreasuryFetchStack() || 'no stack captured'}
                   </p>
                 </div>
               )}
