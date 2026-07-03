@@ -9,6 +9,9 @@ import ProposalCard from '@/components/ProposalCard'
 import TreasuryStats from '@/components/TreasuryStats'
 import BottomNav from '@/components/BottomNav'
 import EmptyState from '@/components/EmptyState'
+import DesktopSidebar from '@/components/DesktopSidebar'
+import DesktopTopBar from '@/components/DesktopTopBar'
+import DesktopTreasuryOverview from '@/components/DesktopTreasuryOverview'
 
 type Filter = 'All' | 'Active' | 'Executed' | 'Rejected' | 'Expired'
 const FILTERS: Filter[] = ['All', 'Active', 'Executed', 'Rejected', 'Expired']
@@ -98,74 +101,92 @@ export default function TreasuryPage() {
       )
 
   return (
-    <main className="min-h-screen bg-ink">
-      <header className="sticky top-0 z-40 bg-ink border-b border-rule">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="font-data text-ghost text-xs shrink-0">
-            ← LEVYLEDGER
-          </Link>
-          <div className={`transition-opacity duration-200 ${
-            scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}>
+    <>
+      <div className="xl:hidden">
+        <main className="min-h-screen bg-ink">
+          <header className="sticky top-0 z-40 bg-ink border-b border-rule">
+            <div className="px-6 py-4 flex items-center justify-between">
+              <Link href="/" className="font-data text-ghost text-xs shrink-0">
+                ← LEVYLEDGER
+              </Link>
+              <div className={`transition-opacity duration-200 ${
+                scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}>
+                <TreasuryStats
+                  availableBalance={treasury.availableBalance}
+                  totalDeposited={treasury.totalDeposited}
+                  totalSpent={treasury.totalSpent}
+                  compact
+                />
+              </div>
+            </div>
+          </header>
+
+          <section className="px-6 pt-8 pb-6 border-b border-rule">
+            <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
+              {university.toUpperCase()} Student Union
+            </p>
+            <h1 className="font-display text-2xl font-bold text-ledger">
+              {UNIVERSITIES[university] || university} Treasury
+            </h1>
+          </section>
+
+          <div ref={statsRef}>
             <TreasuryStats
               availableBalance={treasury.availableBalance}
               totalDeposited={treasury.totalDeposited}
               totalSpent={treasury.totalSpent}
-              compact
             />
           </div>
-        </div>
-      </header>
 
-      <section className="px-6 pt-8 pb-6 border-b border-rule">
-        <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
-          {university.toUpperCase()} Student Union
-        </p>
-        <h1 className="font-display text-2xl font-bold text-ledger">
-          {UNIVERSITIES[university] || university} Treasury
-        </h1>
-      </section>
+          <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
+            {FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
+                  filter === f
+                    ? 'border-uniben text-uniben'
+                    : 'border-rule text-ghost hover:border-ghost'
+                }`}
+              >
+                {f.toUpperCase()}
+              </button>
+            ))}
+          </section>
 
-      <div ref={statsRef}>
-        <TreasuryStats
-          availableBalance={treasury.availableBalance}
-          totalDeposited={treasury.totalDeposited}
-          totalSpent={treasury.totalSpent}
-        />
+          <section className="px-6 pt-2 pb-28">
+            {filtered.length === 0 ? (
+              <EmptyState filter={filter} university={university} />
+            ) : (
+              filtered.map(p => (
+                <ProposalCard
+                  key={p.index}
+                  proposal={p}
+                  university={university}
+                  signers={treasury.signers}
+                />
+              ))
+            )}
+          </section>
+
+          <BottomNav university={university} />
+        </main>
       </div>
 
-      <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
-        {FILTERS.map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
-              filter === f
-                ? 'border-uniben text-uniben'
-                : 'border-rule text-ghost hover:border-ghost'
-            }`}
-          >
-            {f.toUpperCase()}
-          </button>
-        ))}
-      </section>
-
-      <section className="px-6 pt-2 pb-28">
-        {filtered.length === 0 ? (
-          <EmptyState filter={filter} university={university} />
-        ) : (
-          filtered.map(p => (
-            <ProposalCard
-              key={p.index}
-              proposal={p}
-              university={university}
-              signers={treasury.signers}
-            />
-          ))
-        )}
-      </section>
-
-      <BottomNav university={university} />
-    </main>
+      <div className="hidden xl:flex min-h-screen bg-ink">
+        <DesktopSidebar university={university} />
+        <div className="flex-1 flex flex-col">
+          <DesktopTopBar universityName={UNIVERSITIES[university] || university} />
+          <DesktopTreasuryOverview
+            university={university}
+            universityName={UNIVERSITIES[university] || university}
+            treasury={treasury}
+            proposals={filtered}
+            loading={false}
+          />
+        </div>
+      </div>
+    </>
   )
 }
