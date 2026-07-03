@@ -1,7 +1,17 @@
+'use client'
+
 import Link from 'next/link'
 import LiveHero from '@/components/LiveHero'
+import DesktopLanding from '@/components/DesktopLanding'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 
 export default function Home() {
+  const isDesktop = useIsDesktop()
+
+  if (isDesktop) {
+    return <DesktopLanding />
+  }
+
   return (
     <main className="min-h-screen bg-ink">
 
