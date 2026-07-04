@@ -1,17 +1,18 @@
-'use client'
-
 interface Props {
   verified?: boolean
 }
 
 export default function VerificationBadge({ verified = true }: Props) {
-  if (!verified) return null
-  return (
-    <div className="inline-flex items-center gap-2 border border-nigerian px-3 py-1.5">
-      <span className="w-1.5 h-1.5 bg-nigerian" />
-      <span className="font-data text-nigerian text-[10px] tracking-widest uppercase">
-        Verified On-chain
+  if (!verified) {
+    return (
+      <span className="font-data text-[10px] text-ghost border border-rule px-1.5 py-0.5 tracking-widest">
+        UNVERIFIED
       </span>
-    </div>
+    )
+  }
+  return (
+    <span className="font-data text-[10px] text-nigerian border border-nigerian px-1.5 py-0.5 tracking-widest">
+      VERIFIED ON-CHAIN
+    </span>
   )
 }
