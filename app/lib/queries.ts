@@ -45,18 +45,44 @@ export async function fetchTreasury(slug: string) {
   }
 }
 
-export async function fetchAllProposals(treasuryPubkey: PublicKey, count: number) {
+/**
+ * SCRIPT 2 FIX: Fetches ALL proposals for a given treasury in a SINGLE RPC call.
+ * This completely eliminates the N+1 query disaster that was freezing the browser.
+ */
+export async function fetchAllProposals(treasuryPubkey: PublicKey, _count?: number) {
   const program = getReadonlyProgram()
   const accounts = (program.account as any)
-  const results = []
-  for (let i = 0; i < count; i++) {
-    try {
-      const [pda] = getProposalPDA(treasuryPubkey, i)
-      const data = await accounts.proposalAccount.fetch(pda)
-      results.push({ pda, index: i, ...data })
-    } catch {}
+
+  try {
+    // Anchor's .all() method allows filtering by memcmp.
+    // The 'treasury' field is the first field in ProposalAccount.
+    // Offset 8 skips the 8-byte Anchor discriminator.
+    const proposals = await accounts.proposalAccount.all([
+      {
+        memcmp: {
+          offset: 8,
+          bytes: treasuryPubkey.toBase58(),
+        },
+      },
+    ])
+
+    // Map the results to include the index and PDA, then sort by index descending (newest first)
+    return proposals
+      .map((p: any) => {
+        const index = typeof p.account.proposalIndex?.toNumber === 'function' 
+          ? p.account.proposalIndex.toNumber() 
+          : Number(p.account.proposalIndex)
+        return { 
+          pda: p.publicKey, 
+          index, 
+          ...p.account 
+        }
+      })
+      .sort((a: any, b: any) => b.index - a.index)
+  } catch (err) {
+    console.error('[fetchAllProposals] memcmp fetch failed:', err)
+    return []
   }
-  return results.reverse()
 }
 
 export async function fetchProposal(treasuryPubkey: PublicKey, index: number) {
