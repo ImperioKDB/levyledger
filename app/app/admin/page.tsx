@@ -1,5 +1,4 @@
 'use client'
-
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -15,8 +14,8 @@ import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/a
 import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
 import {
-  fetchPendingRequests, markRequestApproved, markRequestRejected,
-  DepartmentRequest,
+fetchPendingRequests, markRequestApproved, markRequestRejected,
+DepartmentRequest,
 } from '@/lib/supabase'
 
 const USDC_MINT = new PublicKey(DEVNET_USDC_MINT)
@@ -91,9 +90,7 @@ function AdminContent() {
   const uniSlug = params.get('treasury') || 'uniben'
   const wallet  = useWallet()
   const { program, anchorError } = useAnchorProgram()
-
   const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
-
   const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
   const [currentUrl,  setCurrentUrl]  = useState('')
   const [treasury,    setTreasury]    = useState<any>(null)
@@ -101,12 +98,10 @@ function AdminContent() {
   const [loading,     setLoading]     = useState(true)
   const [tab,         setTab]         = useState<Tab>('sign')
   const [confirm,     setConfirm]     = useState<string | null>(null)
-
   const [depositAmt,  setDepositAmt]  = useState('')
   const [depositTx,   setDepositTx]   = useState<TxState>('idle')
   const [depositSig,  setDepositSig]  = useState('')
   const [depositErr,  setDepositErr]  = useState('')
-
   const [propAmt,     setPropAmt]     = useState('')
   const [propRecip,   setPropRecip]   = useState('')
   const [propCat,     setPropCat]     = useState('welfare')
@@ -114,17 +109,14 @@ function AdminContent() {
   const [proposeTx,   setProposeTx]   = useState<TxState>('idle')
   const [proposeSig,  setProposeSig]  = useState('')
   const [proposeErr,  setProposeErr]  = useState('')
-
   const [initSigners, setInitSigners] = useState<string[]>(['','','','',''])
   const [initSlug,    setInitSlug]    = useState(uniSlug)
   const [initTx,      setInitTx]      = useState<TxState>('idle')
   const [initSig,     setInitSig]     = useState('')
   const [initErr,     setInitErr]     = useState('')
-
   const [signTx,      setSignTx]      = useState<Record<number, TxState>>({})
   const [signSig,     setSignSig]     = useState<Record<number, string>>({})
   const [signErr,     setSignErr]     = useState<Record<number, string>>({})
-
   // Requests queue state — admin-only
   const [requests,        setRequests]        = useState<DepartmentRequest[]>([])
   const [requestsLoading, setRequestsLoading] = useState(true)
@@ -176,6 +168,7 @@ function AdminContent() {
     : -1
   const isExec = execIndex >= 0
 
+  // --- BEGIN PATCHED LOGIC FROM YOUR HOTFIX ---
   const pendingProposals = proposals.filter(p => {
     const status = Object.keys(p.status)[0]
     return status === 'active' &&
@@ -188,6 +181,7 @@ function AdminContent() {
       setTab('deposit')
     }
   }, [treasury, isExec, tab])
+  // --- END PATCHED LOGIC ---
 
   async function handleInit() {
     if (!wallet.publicKey) return
@@ -219,11 +213,9 @@ function AdminContent() {
   }
 
   async function handleApproveRequest(req: DepartmentRequest) {
-    // Pre-fill the init form from the request, then switch tabs so the
-    // admin reviews before actually signing the on-chain transaction.
     setInitSlug(req.slug)
     setInitSigners([req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5])
-    setTab('propose') // placeholder tab switch avoided; see note below
+    setTab('propose')
   }
 
   async function handleMarkApproved(req: DepartmentRequest) {
@@ -366,7 +358,6 @@ function AdminContent() {
         </Link>
         {!needsPhantomGuide && <WalletMultiButton />}
       </header>
-
       <div className="px-6 pt-8 pb-28">
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">Exec Panel</p>
         <h1 className="font-display text-2xl font-bold text-ledger mb-6">
@@ -408,8 +399,7 @@ function AdminContent() {
           </div>
         )}
 
-        {/* Admin-only Requests tab, shown ABOVE the per-treasury panel
-            since it's not scoped to a single university slug */}
+        {/* Admin-only Requests tab */}
         {wallet.publicKey && isAdminWallet && (
           <div className="mb-8 border border-uniben p-4">
             <p className="font-data text-uniben text-xs tracking-widest uppercase mb-3">
@@ -533,7 +523,6 @@ function AdminContent() {
                 </p>
               </div>
             </div>
-
             {!program && wallet.publicKey && (
               <div className="border border-pending p-3 space-y-2">
                 <p className="font-data text-pending text-xs tracking-widest uppercase">
@@ -546,7 +535,6 @@ function AdminContent() {
                 )}
               </div>
             )}
-
             <div className="space-y-3">
               <div>
                 <label className="font-data text-ghost text-xs block mb-1">
@@ -592,7 +580,22 @@ function AdminContent() {
           </div>
         )}
 
-        {wallet.publicKey && !loading && treasury && (
+        {wallet.publicKey && !loading && treasury && !isExec && (
+          <div className="border border-rule p-6 space-y-4">
+            <p className="font-data text-void text-xs tracking-widest uppercase">Not Authorized</p>
+            <p className="text-body text-sm leading-relaxed">
+              This wallet is not registered as an exec for this treasury.
+            </p>
+            <div className="border-t border-rule pt-4">
+              <p className="font-data text-ghost text-xs mb-1">Connected</p>
+              <p className="font-data text-ledger text-xs break-all">
+                {wallet.publicKey.toString()}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {wallet.publicKey && !loading && treasury && isExec && (
           <div>
             <div className="border border-rule p-4 mb-6 flex items-center justify-between">
               <div>
@@ -611,9 +614,8 @@ function AdminContent() {
                 </p>
               </div>
             </div>
-
             <div className="flex border-b border-rule mb-6 overflow-x-auto no-scrollbar">
-              {(isExec ? ['sign', 'propose', 'deposit'] : ['deposit']) as Tab[]).map(t => (
+              {(['sign', 'propose', 'deposit'] as Tab[]).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={`shrink-0 px-4 py-3 font-data text-xs tracking-widest transition-colors relative ${
                     tab === t ? 'text-uniben' : 'text-ghost hover:text-body'
@@ -627,7 +629,7 @@ function AdminContent() {
               ))}
             </div>
 
-            {tab === 'sign' && isExec && (
+            {tab === 'sign' && (
               <div>
                 {pendingProposals.length === 0 ? (
                   <div className="pt-6 text-center">
@@ -658,7 +660,7 @@ function AdminContent() {
                               confirm === aKey
                                 ? 'bg-nigerian text-ink border-nigerian'
                                 : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'
-                            }`}>
+                            }}>
                             {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
                           </button>
                           <button onClick={() => handleSign(p, false)} disabled={txState === 'loading'}
@@ -666,7 +668,7 @@ function AdminContent() {
                               confirm === rKey
                                 ? 'bg-void text-ink border-void'
                                 : 'border-void text-void hover:bg-void hover:text-ink'
-                            }`}>
+                            }}>
                             {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
                           </button>
                         </div>
@@ -678,7 +680,7 @@ function AdminContent() {
               </div>
             )}
 
-            {tab === 'propose' && isExec && (
+            {tab === 'propose' && (
               <div className="space-y-4">
                 <div className="border-b border-rule pb-4">
                   <p className="font-data text-ghost text-xs mb-1">Available to spend</p>
