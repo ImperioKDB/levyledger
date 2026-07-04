@@ -27,24 +27,76 @@ const EXPLORER  = 'https://explorer.solana.com/tx'
 type Tab     = 'sign' | 'propose' | 'deposit'
 type TxState = 'idle' | 'loading' | 'success' | 'error'
 
-function TxResult({ state, sig, error }: { state: TxState; sig: string; error: string }) {
+function TxResult({ 
+  state, 
+  sig, 
+  error, 
+  amount, 
+  onClose 
+}: { 
+  state: TxState; 
+  sig: string; 
+  error: string; 
+  amount?: string; 
+  onClose?: () => void 
+}) {
   if (state === 'loading') return (
-    <p className="font-data text-ghost text-xs mt-3 animate-pulse">Awaiting confirmation...</p>
+    <div className="mt-6 border border-rule bg-paper p-5 animate-pulse flex flex-col items-center justify-center text-center">
+      <span className="font-data text-pending text-xs mb-2">● PROCESSING TRANSACTION</span>
+      <p className="text-body text-xs">Waiting for block confirmation on Solana Devnet...</p>
+    </div>
   )
+  
   if (state === 'success') return (
-    <div className="mt-3 border border-nigerian p-3">
-      <p className="font-data text-nigerian text-xs mb-1 tracking-widest">CONFIRMED</p>
-      <a href={`${EXPLORER}/${sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
-        className="font-data text-xs text-ghost hover:text-uniben break-all">
-        {sig.slice(0, 24)}...{sig.slice(-8)} →
-      </a>
+    <div className="mt-6 border border-nigerian bg-paper p-5 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-rule">
+          <span className="font-data text-nigerian text-xs tracking-widest uppercase">TRANSACTION RECEIPT</span>
+          <span className="font-data text-ghost text-[10px]">SUCCESS</span>
+        </div>
+        <div className="space-y-3 mb-6">
+          {amount && (
+            <div>
+              <p className="font-data text-ghost text-[10px] uppercase">Amount</p>
+              <p className="font-data text-ledger text-lg font-bold">${amount} USDC</p>
+            </div>
+          )}
+          <div>
+            <p className="font-data text-ghost text-[10px] uppercase">On-Chain Proof</p>
+            <p className="font-data text-body text-xs break-all leading-relaxed bg-lifted p-2 border border-rule">
+              {sig}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <a 
+          href={`${EXPLORER}/${sig}?cluster=devnet`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex-1 text-center font-data text-xs py-3 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors"
+        >
+          EXPLORER LINK ↗
+        </a>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="flex-1 font-data text-xs py-3 border border-rule text-ghost hover:border-ledger transition-colors"
+          >
+            DISMISS
+          </button>
+        )}
+      </div>
     </div>
   )
+  
   if (state === 'error') return (
-    <div className="mt-3 border border-void p-3">
-      <p className="font-data text-void text-xs">{error}</p>
+    <div className="mt-6 border border-void bg-paper p-5">
+      <p className="font-data text-void text-xs tracking-widest uppercase mb-1">TRANSACTION FAILED</p>
+      <p className="font-data text-void text-xs break-all bg-lifted p-2 border border-rule leading-relaxed">{error}</p>
     </div>
   )
+  
   return null
 }
 
@@ -108,6 +160,7 @@ function AdminContent() {
   const [depositTx,   setDepositTx]   = useState<TxState>('idle')
   const [depositSig,  setDepositSig]  = useState('')
   const [depositErr,  setDepositErr]  = useState('')
+  const [successAmt,  setSuccessAmt]  = useState('')
 
   const [propAmt,     setPropAmt]     = useState('')
   const [propRecip,   setPropRecip]   = useState('')
@@ -116,6 +169,7 @@ function AdminContent() {
   const [proposeTx,   setProposeTx]   = useState<TxState>('idle')
   const [proposeSig,  setProposeSig]  = useState('')
   const [proposeErr,  setProposeErr]  = useState('')
+  const [successPropAmt, setSuccessPropAmt] = useState('')
 
   const [initSigners, setInitSigners] = useState<string[]>(['','','','',''])
   const [initSlug,    setInitSlug]    = useState(uniSlug)
@@ -252,7 +306,8 @@ function AdminContent() {
     if (!treasury) return
     setDepositTx('loading'); setDepositErr('')
     try {
-      const amount        = new BN(Math.floor(parseFloat(depositAmt) * 1_000_000))
+      const currentAmt    = depositAmt
+      const amount        = new BN(Math.floor(parseFloat(currentAmt) * 1_000_000))
       const [treasuryPDA] = getTreasuryPDA(uniSlug)
       const [vaultPDA]    = getVaultPDA(treasuryPDA)
       const depositorATA  = await getAssociatedTokenAddress(USDC_MINT, wallet.publicKey)
@@ -267,6 +322,7 @@ function AdminContent() {
           tokenProgram:          TOKEN_PROGRAM_ID,
         })
         .rpc()
+      setSuccessAmt(currentAmt)
       setDepositSig(sig); setDepositTx('success')
       setDepositAmt(''); await loadTreasury()
     } catch (e: any) {
@@ -283,7 +339,8 @@ function AdminContent() {
     if (!treasury) return
     setProposeTx('loading'); setProposeErr('')
     try {
-      const amount        = new BN(Math.floor(parseFloat(propAmt) * 1_000_000))
+      const currentAmt    = propAmt
+      const amount        = new BN(Math.floor(parseFloat(currentAmt) * 1_000_000))
       const recipientKey  = new PublicKey(propRecip.trim())
       const categoryEnum  = { [propCat]: {} }
       const count         = typeof treasury.proposalCount?.toNumber === 'function'
@@ -299,6 +356,7 @@ function AdminContent() {
           systemProgram: SystemProgram.programId,
         })
         .rpc()
+      setSuccessPropAmt(currentAmt)
       setProposeSig(sig); setProposeTx('success')
       setPropAmt(''); setPropRecip(''); setPropDesc('')
       await loadTreasury()
@@ -351,7 +409,6 @@ function AdminContent() {
     }
   }
 
-  // Unified administrative controls and markup
   const innerContent = (
     <div className="max-w-3xl mx-auto">
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">Exec Panel</p>
@@ -647,25 +704,38 @@ function AdminContent() {
                         {p.signaturesFor}/{treasury.threshold} signed ·{' '}
                         {treasury.threshold - p.signaturesFor} more needed
                       </p>
-                      <div className="flex gap-3">
-                        <button onClick={() => handleSign(p, true)} disabled={txState === 'loading'}
-                          className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
-                            confirm === aKey
-                              ? 'bg-nigerian text-ink border-nigerian'
-                              : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'
-                          }`}>
-                          {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
-                        </button>
-                        <button onClick={() => handleSign(p, false)} disabled={txState === 'loading'}
-                          className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
-                            confirm === rKey
-                              ? 'bg-void text-ink border-void'
-                              : 'border-void text-void hover:bg-void hover:text-ink'
-                          }`}>
-                          {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
-                        </button>
-                      </div>
-                      <TxResult state={txState} sig={signSig[p.index] || ''} error={signErr[p.index] || ''} />
+                      {txState === 'idle' ? (
+                        <div className="flex gap-3">
+                          <button onClick={() => handleSign(p, true)} disabled={txState === 'loading'}
+                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
+                              confirm === aKey
+                                ? 'bg-nigerian text-ink border-nigerian'
+                                : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'
+                            }`}>
+                            {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
+                          </button>
+                          <button onClick={() => handleSign(p, false)} disabled={txState === 'loading'}
+                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
+                              confirm === rKey
+                                ? 'bg-void text-ink border-void'
+                                : 'border-void text-void hover:bg-void hover:text-ink'
+                            }`}>
+                            {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
+                          </button>
+                        </div>
+                      ) : (
+                        <TxResult 
+                          state={txState} 
+                          sig={signSig[p.index] || ''} 
+                          error={signErr[p.index] || ''} 
+                          amount={formatUSDC(p.amount)}
+                          onClose={() => {
+                            setSignTx(prev => ({ ...prev, [p.index]: 'idle' }))
+                            setSignSig(prev => ({ ...prev, [p.index]: '' }))
+                            setSignErr(prev => ({ ...prev, [p.index]: '' }))
+                          }}
+                        />
+                      )}
                     </div>
                   )
                 })
@@ -675,87 +745,119 @@ function AdminContent() {
 
           {tab === 'propose' && isExec && (
             <div className="space-y-4">
-              <div className="border-b border-rule pb-4">
-                <p className="font-data text-ghost text-xs mb-1">Available to spend</p>
-                <p className="font-data text-uniben text-2xl font-bold">
-                  ${formatUSDC(treasury.availableBalance)} USDC
-                </p>
-              </div>
-              <div>
-                <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
-                <input type="number" value={propAmt} onChange={e => setPropAmt(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
-              </div>
-              <div>
-                <label className="font-data text-ghost text-xs block mb-1">Recipient Wallet Address</label>
-                <input value={propRecip} onChange={e => setPropRecip(e.target.value)}
-                  placeholder="Solana public key..."
-                  className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
-              </div>
-              <div>
-                <label className="font-data text-ghost text-xs block mb-1">Category</label>
-                <select value={propCat} onChange={e => setPropCat(e.target.value)}
-                  className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none">
-                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="font-data text-ghost text-xs block mb-1">
-                  Description ({propDesc.length}/200)
-                </label>
-                <textarea value={propDesc} onChange={e => setPropDesc(e.target.value)}
-                  maxLength={200} rows={3} placeholder="What is this for? Be specific."
-                  className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost" />
-              </div>
-              <button onClick={handlePropose}
-                disabled={proposeTx === 'loading' || !propAmt || !propRecip || !propDesc}
-                className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
-                {proposeTx === 'loading' ? 'SUBMITTING...' : 'CREATE PROPOSAL'}
-              </button>
-              <TxResult state={proposeTx} sig={proposeSig} error={proposeErr} />
+              {proposeTx === 'idle' ? (
+                <>
+                  <div className="border-b border-rule pb-4">
+                    <p className="font-data text-ghost text-xs mb-1">Available to spend</p>
+                    <p className="font-data text-uniben text-2xl font-bold">
+                      ${formatUSDC(treasury.availableBalance)} USDC
+                    </p>
+                  </div>
+                  <div>
+                    <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
+                    <input type="number" value={propAmt} onChange={e => setPropAmt(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
+                  </div>
+                  <div>
+                    <label className="font-data text-ghost text-xs block mb-1">Recipient Wallet Address</label>
+                    <input value={propRecip} onChange={e => setPropRecip(e.target.value)}
+                      placeholder="Solana public key..."
+                      className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
+                  </div>
+                  <div>
+                    <label className="font-data text-ghost text-xs block mb-1">Category</label>
+                    <select value={propCat} onChange={e => setPropCat(e.target.value)}
+                      className="w-full bg-paper border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none">
+                      {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-data text-ghost text-xs block mb-1">
+                      Description ({propDesc.length}/200)
+                    </label>
+                    <textarea value={propDesc} onChange={e => setPropDesc(e.target.value)}
+                      maxLength={200} rows={3} placeholder="What is this for? Be specific."
+                      className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost" />
+                  </div>
+                  <button onClick={handlePropose}
+                    disabled={proposeTx === 'loading' || !propAmt || !propRecip || !propDesc}
+                    className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
+                    {proposeTx === 'loading' ? 'SUBMITTING...' : 'CREATE PROPOSAL'}
+                  </button>
+                </>
+              ) : (
+                <TxResult 
+                  state={proposeTx} 
+                  sig={proposeSig} 
+                  error={proposeErr} 
+                  amount={successPropAmt}
+                  onClose={() => {
+                    setProposeTx('idle')
+                    setProposeSig('')
+                    setProposeErr('')
+                    setSuccessPropAmt('')
+                  }}
+                />
+              )}
             </div>
           )}
 
           {tab === 'deposit' && (
             <div className="space-y-4">
-              <div className="border-b border-rule pb-4">
-                <p className="font-data text-ghost text-xs mb-1">Current vault balance</p>
-                <p className="font-data text-uniben text-2xl font-bold">
-                  ${formatUSDC(treasury.availableBalance)} USDC
-                </p>
-              </div>
-              <div className="border border-uniben p-3">
-                <p className="text-body text-xs leading-relaxed">
-                  Anyone can deposit — students can pay dues directly into
-                  this vault from their own wallet, or an exec can deposit
-                  collected off-chain funds. Both paths are equally valid.
-                </p>
-              </div>
-              <div>
-                <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
-                <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
-              </div>
-              <div className="border border-rule p-4">
-                <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">Need devnet USDC?</p>
-                <p className="text-body text-sm leading-relaxed mb-2">
-                  Get it from{' '}
-                  <a href="https://spl-token-faucet.com" target="_blank" rel="noopener noreferrer"
-                    className="text-uniben hover:underline">spl-token-faucet.com</a>
-                  {' '}— paste this mint:
-                </p>
-                <p className="font-data text-ledger text-xs break-all">{DEVNET_USDC_MINT}</p>
-              </div>
-              <button onClick={handleDeposit}
-                disabled={depositTx === 'loading' || !depositAmt}
-                className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
-                {depositTx === 'loading' ? 'DEPOSITING...' : 'DEPOSIT TO VAULT'}
-              </button>
-              <TxResult state={depositTx} sig={depositSig} error={depositErr} />
+              {depositTx === 'idle' ? (
+                <>
+                  <div className="border-b border-rule pb-4">
+                    <p className="font-data text-ghost text-xs mb-1">Current vault balance</p>
+                    <p className="font-data text-uniben text-2xl font-bold">
+                      ${formatUSDC(treasury.availableBalance)} USDC
+                    </p>
+                  </div>
+                  <div className="border border-uniben p-3">
+                    <p className="text-body text-xs leading-relaxed">
+                      Anyone can deposit — students can pay dues directly into
+                      this vault from their own wallet, or an exec can deposit
+                      collected off-chain funds. Both paths are equally valid.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
+                    <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
+                  </div>
+                  <div className="border border-rule p-4">
+                    <p className="font-data text-pending text-xs tracking-widest uppercase mb-2">Need devnet USDC?</p>
+                    <p className="text-body text-sm leading-relaxed mb-2">
+                      Get it from{' '}
+                      <a href="https://spl-token-faucet.com" target="_blank" rel="noopener noreferrer"
+                        className="text-uniben hover:underline">spl-token-faucet.com</a>
+                      {' '}— paste this mint:
+                    </p>
+                    <p className="font-data text-ledger text-xs break-all">{DEVNET_USDC_MINT}</p>
+                  </div>
+                  <button onClick={handleDeposit}
+                    disabled={depositTx === 'loading' || !depositAmt}
+                    className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
+                    {depositTx === 'loading' ? 'DEPOSITING...' : 'DEPOSIT TO VAULT'}
+                  </button>
+                </>
+              ) : (
+                <TxResult 
+                  state={depositTx} 
+                  sig={depositSig} 
+                  error={depositErr} 
+                  amount={successAmt}
+                  onClose={() => {
+                    setDepositTx('idle')
+                    setDepositSig('')
+                    setDepositErr('')
+                    setSuccessAmt('')
+                  }}
+                />
+              )}
             </div>
           )}
         </div>
