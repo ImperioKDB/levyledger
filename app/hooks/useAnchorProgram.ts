@@ -7,25 +7,28 @@ import idlRaw from '@/lib/idl/levyledger.json'
 const PROGRAM_ID_STR = '4Av48RVmUb2U5V3jqkEC15C5cbjNRY2TqD64ebc1jn1M'
 const IDL = { ...idlRaw, address: PROGRAM_ID_STR } as unknown as Idl
 
-export function useAnchorProgram() {
+interface AnchorProgramResult {
+  program: Program | null
+  anchorError: string | null
+}
+
+export function useAnchorProgram(): AnchorProgramResult {
   const { connection } = useConnection()
   const wallet = useWallet()
 
-  return useMemo(() => {
-    if (!wallet.publicKey) {
-      return { program: null, anchorError: null }
-    }
+  return useMemo<AnchorProgramResult>(() => {
+    if (!wallet.publicKey) return { program: null, anchorError: null }
     try {
       const provider = new AnchorProvider(
         connection,
         wallet as any,
         { commitment: 'confirmed', preflightCommitment: 'confirmed' }
       )
-      return { program: new Program(IDL, provider), anchorError: null }
-    } catch (err) {
+      const program = new Program(IDL, provider)
+      return { program, anchorError: null }
+    } catch (err: any) {
       console.error('[useAnchorProgram] init failed:', err)
-      const msg = err instanceof Error ? err.message : String(err)
-      return { program: null, anchorError: msg }
+      return { program: null, anchorError: err?.message || String(err) }
     }
   }, [connection, wallet.publicKey, wallet.connected])
 }
