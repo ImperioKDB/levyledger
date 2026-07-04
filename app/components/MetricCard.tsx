@@ -1,5 +1,3 @@
-'use client'
-
 interface Props {
   label: string
   value: string | number
@@ -8,11 +6,9 @@ interface Props {
 
 export default function MetricCard({ label, value, highlight = false }: Props) {
   return (
-    <div className="bg-paper border border-rule p-4 flex flex-col justify-between h-24">
-      <p className="font-data text-ghost text-[10px] tracking-widest uppercase">
-        {label}
-      </p>
-      <p className={`font-data text-xl font-bold leading-none ${highlight ? 'text-uniben' : 'text-ledger'}`}>
+    <div className="border border-rule p-4 bg-paper">
+      <p className="font-data text-ghost text-xs mb-2">{label}</p>
+      <p className={`font-data text-lg font-bold ${highlight ? "text-uniben" : "text-ledger"}`}>
         {value}
       </p>
     </div>
