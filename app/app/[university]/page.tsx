@@ -7,6 +7,8 @@ import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { UNIVERSITIES } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
 import TreasuryStats from '@/components/TreasuryStats'
+import MetricCard from '@/components/MetricCard'
+import { formatUSDC } from '@/lib/anchor'
 import BottomNav from '@/components/BottomNav'
 import EmptyState from '@/components/EmptyState'
 import DesktopSidebar from '@/components/DesktopSidebar'
@@ -131,13 +133,12 @@ export default function TreasuryPage() {
             </h1>
           </section>
 
-          <div ref={statsRef}>
-            <TreasuryStats
-              availableBalance={treasury.availableBalance}
-              totalDeposited={treasury.totalDeposited}
-              totalSpent={treasury.totalSpent}
-            />
-          </div>
+          <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 border-b border-rule">
+<MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
+<MetricCard label="Total Deposited" value={'$' + formatUSDC(treasury.totalDeposited)} />
+<MetricCard label="Total Spent" value={'$' + formatUSDC(treasury.totalSpent)} />
+<MetricCard label="Active Proposals" value={proposals.filter(p => Object.keys(p.status)[0] === 'active').length} />
+</div>
 
           <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
             {FILTERS.map(f => (
