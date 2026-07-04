@@ -783,9 +783,9 @@ function AdminContent() {
                       className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost" />
                   </div>
                   <button onClick={handlePropose}
-                    disabled={proposeTx === 'loading' || !propAmt || !propRecip || !propDesc}
+                    disabled={!propAmt || !propRecip || !propDesc}
                     className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
-                    {proposeTx === 'loading' ? 'SUBMITTING...' : 'CREATE PROPOSAL'}
+                    CREATE PROPOSAL
                   </button>
                 </>
               ) : (
@@ -839,9 +839,9 @@ function AdminContent() {
                     <p className="font-data text-ledger text-xs break-all">{DEVNET_USDC_MINT}</p>
                   </div>
                   <button onClick={handleDeposit}
-                    disabled={depositTx === 'loading' || !depositAmt}
+                    disabled={!depositAmt}
                     className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
-                    {depositTx === 'loading' ? 'DEPOSITING...' : 'DEPOSIT TO VAULT'}
+                    DEPOSIT TO VAULT
                   </button>
                 </>
               ) : (
