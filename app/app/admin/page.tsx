@@ -46,7 +46,7 @@ function TxResult({
       <p className="text-body text-xs">Waiting for block confirmation on Solana Devnet...</p>
     </div>
   )
-  
+
   if (state === 'success') return (
     <div className="mt-6 border border-nigerian bg-paper p-5 flex flex-col justify-between">
       <div>
@@ -89,14 +89,14 @@ function TxResult({
       </div>
     </div>
   )
-  
+
   if (state === 'error') return (
     <div className="mt-6 border border-void bg-paper p-5">
       <p className="font-data text-void text-xs tracking-widest uppercase mb-1">TRANSACTION FAILED</p>
       <p className="font-data text-void text-xs break-all bg-lifted p-2 border border-rule leading-relaxed">{error}</p>
     </div>
   )
-  
+
   return null
 }
 
@@ -706,7 +706,7 @@ function AdminContent() {
                       </p>
                       {txState === 'idle' ? (
                         <div className="flex gap-3">
-                          <button onClick={() => handleSign(p, true)} disabled={txState === 'loading'}
+                          <button onClick={() => handleSign(p, true)} disabled={signTx[p.index] === 'loading'}
                             className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
                               confirm === aKey
                                 ? 'bg-nigerian text-ink border-nigerian'
@@ -714,7 +714,7 @@ function AdminContent() {
                             }`}>
                             {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
                           </button>
-                          <button onClick={() => handleSign(p, false)} disabled={txState === 'loading'}
+                          <button onClick={() => handleSign(p, false)} disabled={signTx[p.index] === 'loading'}
                             className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${
                               confirm === rKey
                                 ? 'bg-void text-ink border-void'
