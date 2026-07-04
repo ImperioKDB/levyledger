@@ -172,7 +172,9 @@ function AdminContent() {
     : -1
   const isExec = execIndex >= 0
 
+  // FIX: Gated array signature filtering to isExec to prevent false signature requirements for non-execs
   const pendingProposals = proposals.filter(p => {
+    if (!isExec || execIndex === -1) return false
     const status = Object.keys(p.status)[0]
     return status === 'active' &&
       !p.signedBy?.[execIndex] &&
@@ -456,7 +458,7 @@ function AdminContent() {
               })
             )}
             <p className="font-data text-ghost text-xs mt-4 border-t border-rule pt-3">
-              "Load Into Init Form" pre-fills the slug and 5 exec addresses below.
+              &#34;Load Into Init Form&#34; pre-fills the slug and 5 exec addresses below.
               You must still tap Initialize Treasury to actually create it on-chain —
               marking approved here only updates the request queue.
             </p>
