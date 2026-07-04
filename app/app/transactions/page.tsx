@@ -1,6 +1,6 @@
 'use client'
-
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
 import StatusBadge from '@/components/StatusBadge'
@@ -8,59 +8,89 @@ import EmptyState from '@/components/EmptyState'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopTransactionsList from '@/components/DesktopTransactionsList'
+import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
+import { formatUSDC } from '@/lib/anchor'
+import { UNIVERSITIES } from '@/lib/constants'
 
-type TxType = 'received' | 'executed' | 'rejected'
-
-interface MockTx {
+interface RealTx {
   id: string
-  type: TxType
+  type: 'executed'
   amount: number
   description: string
   date: string
-  hash: string
 }
 
-const MOCK_TRANSACTIONS: MockTx[] = [
-  { id: '1', type: 'received', amount: 1200000000, description: 'Levy Collection — May', date: 'Jul 02, 2025', hash: '8kLm...3hJ9' },
-  { id: '2', type: 'executed', amount: 250000000, description: 'Infrastructure Committee', date: 'Jul 03, 2025', hash: '9xQe...7aK2' },
-  { id: '3', type: 'received', amount: 950000000, description: 'Levy Collection — Apr', date: 'Jun 30, 2025', hash: '5mKd...8pQ1' },
-  { id: '4', type: 'executed', amount: 180000000, description: 'Welfare Committee', date: 'Jul 01, 2025', hash: '7uPp...1dZx' },
-]
-
-function formatUSDC(micro: number): string {
-  return (micro / 1_000_000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-export default function TransactionsPage() {
+function TransactionsContent() {
+  const searchParams = useSearchParams()
+  const uniSlug = searchParams.get('treasury') || 'uniben'
+  
+  const [transactions, setTransactions] = useState<RealTx[]>([])
+  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const t = await fetchTreasury(uniSlug)
+      if (!t) { setLoading(false); return }
+      
+      const count = typeof t.proposalCount?.toNumber === 'function'
+        ? t.proposalCount.toNumber() : Number(t.proposalCount)
+      const proposals = await fetchAllProposals(t.pda, count)
+      
+      // Derive real transactions from executed proposals
+      const executed = proposals
+        .filter((p: any) => Object.keys(p.status)[0] === 'executed')
+        .map((p: any) => {
+          const created = typeof p.createdAt?.toNumber === 'function' ? p.createdAt.toNumber() : Number(p.createdAt)
+          const date = new Date(created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          const amt = typeof p.amount?.toNumber === 'function' ? p.amount.toNumber() : Number(p.amount)
+          return {
+            id: 'prop-' + p.index,
+            type: 'executed' as const,
+            amount: amt,
+            description: p.description || 'Proposal #' + p.index,
+            date: date,
+          }
+        })
+        .sort((a: any, b: any) => parseInt(b.id.split('-')[1]) - parseInt(a.id.split('-')[1]))
+        
+      setTransactions(executed)
+      setLoading(false)
+    }
+    load()
+  }, [uniSlug])
+
+  const universityName = UNIVERSITIES[uniSlug] || uniSlug.toUpperCase()
 
   return (
     <>
       <div className="xl:hidden">
         <main className="min-h-screen bg-ink pb-24 pt-16">
           <MobileHeader />
-
           <section className="px-4 py-6 border-b border-rule">
+            <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">{uniSlug.toUpperCase()}</p>
             <h1 className="font-display font-bold text-ledger text-2xl">Transactions</h1>
-            <p className="text-body text-xs mt-1">All on-chain activity for this treasury</p>
+            <p className="text-body text-xs mt-1">Executed spending proposals for this treasury</p>
           </section>
-
           <section className="px-4 pt-4">
-            {MOCK_TRANSACTIONS.length === 0 ? (
-              <EmptyState title="No Transactions" body="Transaction history will appear here once activity begins." />
+            {loading ? (
+              <p className="font-data text-ghost text-xs">Loading transactions...</p>
+            ) : transactions.length === 0 ? (
+              <EmptyState 
+                title="No Transactions Yet" 
+                body="Executed spending proposals will appear here as on-chain records." 
+              />
             ) : (
               <div className="space-y-3">
-                {MOCK_TRANSACTIONS.map((tx) => (
+                {transactions.map((tx) => (
                   <div key={tx.id} className="border border-rule bg-paper">
                     <button
                       onClick={() => setExpanded(expanded === tx.id ? null : tx.id)}
                       className="w-full p-4 flex items-center justify-between text-left"
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`w-8 h-8 flex items-center justify-center border ${
-                          tx.type === 'received' ? 'border-nigerian text-nigerian' : 'text-ledger border-rule'
-                        }`}>
-                          {tx.type === 'received' ? '↓' : '↑'}
+                        <span className="w-8 h-8 flex items-center justify-center border border-rule text-ledger">
+                          ↑
                         </span>
                         <div>
                           <p className="font-data text-ledger text-sm font-bold">{tx.description}</p>
@@ -68,17 +98,17 @@ export default function TransactionsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`font-data text-sm font-bold ${tx.type === 'received' ? 'text-nigerian' : 'text-ledger'}`}>
-                          {tx.type === 'received' ? '+' : '-'}${formatUSDC(tx.amount)}
+                        <p className="font-data text-sm font-bold text-ledger">
+                          -${formatUSDC(tx.amount)}
                         </p>
                       </div>
                     </button>
                     {expanded === tx.id && (
                       <div className="px-4 pb-4 border-t border-rule pt-3">
-                        <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">Transaction Hash</p>
-                        <p className="font-data text-ledger text-xs break-all">{tx.hash}</p>
-                        <p className="font-data text-ghost text-[10px] tracking-widest uppercase mt-3 mb-1">Status</p>
-                        <StatusBadge status={tx.type === 'received' ? 'confirmed' : tx.type} />
+                        <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">Status</p>
+                        <StatusBadge status="executed" />
+                        <p className="font-data text-ghost text-[10px] tracking-widest uppercase mt-3 mb-1">Type</p>
+                        <p className="font-data text-ledger text-xs">Executed Proposal</p>
                       </div>
                     )}
                   </div>
@@ -86,18 +116,24 @@ export default function TransactionsPage() {
               </div>
             )}
           </section>
-
-          <BottomNav />
+          <BottomNav university={uniSlug} />
         </main>
       </div>
-
       <div className="hidden xl:flex min-h-screen bg-ink">
-        <DesktopSidebar university="uniben" />
+        <DesktopSidebar university={uniSlug} />
         <div className="flex-1 flex flex-col">
-          <DesktopTopBar universityName="UNIBEN" />
-          <DesktopTransactionsList transactions={MOCK_TRANSACTIONS} />
+          <DesktopTopBar universityName={universityName} />
+          <DesktopTransactionsList transactions={transactions} loading={loading} />
         </div>
       </div>
     </>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-ink" />}>
+      <TransactionsContent />
+    </Suspense>
   )
 }
