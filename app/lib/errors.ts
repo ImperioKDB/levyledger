@@ -13,6 +13,8 @@ export function parseAnchorError(err: any): string {
     return 'This proposal is no longer active.'
   if (msg.includes('ProposalExpired'))
     return 'This proposal expired before reaching threshold.'
+  if (msg.includes('ProposalNotExpired'))
+    return 'This proposal has not expired yet.'
   if (msg.includes('InsufficientFunds'))
     return 'Not enough USDC in the vault for this proposal.'
   if (msg.includes('InvalidSlug'))
@@ -25,6 +27,10 @@ export function parseAnchorError(err: any): string {
     return 'Vault has 20 active proposals — wait for one to resolve first.'
   if (msg.includes('InvalidSigners'))
     return 'All 5 exec wallets must be unique and non-zero.'
+  if (msg.includes('InvalidRecipient'))
+    return 'The recipient token account does not match the proposal.'
+  if (msg.includes('InvalidMint'))
+    return 'The provided token account does not match the USDC mint.'
   if (msg.includes('Overflow'))
     return 'Arithmetic overflow — values too large.'
   if (msg.includes('insufficient funds'))
