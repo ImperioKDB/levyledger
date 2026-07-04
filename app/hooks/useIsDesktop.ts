@@ -1,23 +1,16 @@
-'use client'
+import { useState, useEffect } from 'react'
 
-import { useLayoutEffect, useState } from 'react'
-
-const DESKTOP_QUERY = '(min-width: 1280px)'
-
-// Reports whether the real browser viewport is currently >=1280px,
-// and stays in sync on resize. No query params, no saved
-// preferences. Every visitor gets the correct layout automatically
-// based on their actual screen.
-export function useIsDesktop(): boolean {
+export function useIsDesktop(breakpoint: number = 1280): boolean {
   const [isDesktop, setIsDesktop] = useState(false)
 
-  useLayoutEffect(() => {
-    const mql = window.matchMedia(DESKTOP_QUERY)
-    setIsDesktop(mql.matches)
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [])
+  useEffect(() => {
+    function check() {
+      setIsDesktop(window.innerWidth >= breakpoint)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [breakpoint])
 
   return isDesktop
 }
