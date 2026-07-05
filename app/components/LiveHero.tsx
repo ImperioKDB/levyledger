@@ -103,12 +103,9 @@ export default function LiveHero() {
           </span>
         </div>
       ))}
-      <Link
-        href="/register"
-        className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1 block hover:text-uniben transition-colors"
-      >
-        Register your faculty →
-      </Link>
+      <p className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1">
+        Faculties are onboarded directly by LevyLedger admins.
+      </p>
     </div>
   )
 
