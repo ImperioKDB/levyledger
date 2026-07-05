@@ -14,7 +14,7 @@ import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/a
 import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
 import {
-  fetchPendingRequests, markRequestApproved, markRequestRejected,
+  fetchPendingRequests,
   fetchProfileByWallet,
   DepartmentRequest,
 } from '@/lib/supabase'
@@ -273,11 +273,30 @@ function AdminContent() {
     }
   }
 
-  async function handleMarkApproved(req: DepartmentRequest) {
+  async function handleReviewRequest(req: DepartmentRequest, action: 'approve' | 'reject') {
+    if (!wallet.publicKey || !wallet.signMessage) return
     setReviewTx(prev => ({ ...prev, [req.id]: 'loading' }))
     setReviewErr(prev => ({ ...prev, [req.id]: '' }))
     try {
-      await markRequestApproved(req.id)
+      const messageStr = `LevyLedger admin review: ${action} request ${req.id}`
+      const messageBytes = new TextEncoder().encode(messageStr)
+      const signatureBytes = await wallet.signMessage(messageBytes)
+      const signatureHex = Buffer.from(signatureBytes).toString('hex')
+
+      const r = await fetch('/api/requests/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: wallet.publicKey.toString(),
+          requestId: req.id,
+          action,
+          signature: signatureHex,
+          message: messageStr,
+        }),
+      })
+      const res = await r.json()
+      if (!r.ok) throw new Error(res.error || 'Failed to update request.')
+
       setReviewTx(prev => ({ ...prev, [req.id]: 'success' }))
       await loadRequests()
     } catch (e: any) {
@@ -286,15 +305,12 @@ function AdminContent() {
     }
   }
 
+  async function handleMarkApproved(req: DepartmentRequest) {
+    await handleReviewRequest(req, 'approve')
+  }
+
   async function handleReject(req: DepartmentRequest) {
-    setReviewTx(prev => ({ ...prev, [req.id]: 'loading' }))
-    try {
-      await markRequestRejected(req.id)
-      await loadRequests()
-    } catch (e: any) {
-      setReviewErr(prev => ({ ...prev, [req.id]: e.message || 'Failed to update' }))
-      setReviewTx(prev => ({ ...prev, [req.id]: 'error' }))
-    }
+    await handleReviewRequest(req, 'reject')
   }
 
   async function handleDeposit() {
@@ -813,7 +829,7 @@ function AdminContent() {
       )}
       {isDesktop && (
         <div className="flex min-h-screen bg-ink">
-          <DesktopSidebar university={uniSlug} />
+          <DesktopSidebar university={uniSlug} isAuthorized={isAdminWallet || isExec} />
           <div className="flex-1 flex flex-col">
             <DesktopTopBar universityName={uniSlug.toUpperCase() + " ADMIN"} />
             <div className="p-8 max-w-4xl w-full mx-auto overflow-y-auto">{innerContent}</div>
@@ -831,3 +847,5 @@ export default function AdminPage() {
     </Suspense>
   )
 }
+
+
