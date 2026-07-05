@@ -36,6 +36,21 @@ export interface StudentProfile {
   created_at: string
 }
 
+// Delegated review admins. Distinct from ADMIN_KEY -- membership here grants
+// the *review* power (approve/reject department_requests), never the
+// *on-chain init* power, which stays hardcoded to ADMIN_KEY inside the
+// Anchor program itself (see `constraint = authority.key() == ADMIN_KEY` in
+// src/lib.rs). Writes to this table go through
+// app/app/api/admin/manage/route.ts once that exists -- until then, add or
+// remove rows directly in the Supabase table editor. See migration
+// 'add_platform_admins_table'.
+export interface PlatformAdmin {
+  wallet_address: string
+  added_by: string
+  added_at: string
+  label: string | null
+}
+
 export async function submitDepartmentRequest(data: {
   university: string
   department: string
@@ -160,6 +175,31 @@ export async function fetchProfilesByWallets(walletAddresses: string[]): Promise
     .in('wallet_address', walletAddresses)
   if (error) throw error
   return data as StudentProfile[]
+}
+
+// ── Delegated admin lookup ─────────────────────────────────────────────────
+// Read-only from this anon client, same pattern as everything else above.
+// `platform_admins` has a public SELECT policy (wallet addresses only --
+// no financial data, consistent with the rest of this file) and no anon
+// write policy. Used by hooks/useIsAdmin.ts.
+
+export async function isPlatformAdminWallet(walletAddress: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('platform_admins')
+    .select('wallet_address')
+    .eq('wallet_address', walletAddress)
+    .maybeSingle()
+  if (error) throw error
+  return Boolean(data)
+}
+
+export async function fetchPlatformAdmins(): Promise<PlatformAdmin[]> {
+  const { data, error } = await supabase
+    .from('platform_admins')
+    .select('*')
+    .order('added_at', { ascending: false })
+  if (error) throw error
+  return data as PlatformAdmin[]
 }
 
 // Kept generic (not hardcoded to UNIBEN) so a future multi-university
