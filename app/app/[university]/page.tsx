@@ -4,33 +4,27 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
-import { UNIVERSITIES } from '@/lib/constants'
+import { fetchFacultyBySlug } from '@/lib/supabase'
 import ProposalCard from '@/components/ProposalCard'
 import TreasuryStats from '@/components/TreasuryStats'
 import MetricCard from '@/components/MetricCard'
 import { formatUSDC } from '@/lib/anchor'
 import BottomNav from '@/components/BottomNav'
-import EmptyState from '@/components/EmptyState'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopTreasuryOverview from '@/components/DesktopTreasuryOverview'
 
-type Filter = 'All' | 'Active' | 'Executed' | 'Rejected' | 'Expired'
-const FILTERS: Filter[] = ['All', 'Active', 'Executed', 'Rejected', 'Expired']
-
 export default function TreasuryPage() {
   const { university } = useParams() as { university: string }
-  const [treasury,  setTreasury]  = useState<any>(null)
-  const [proposals, setProposals] = useState<any[]>([])
-  const [loading,   setLoading]   = useState(true)
-  const [filter,    setFilter]    = useState<Filter>('All')
-  const [notFound,  setNotFound]  = useState(false)
-  const [scrolled,  setScrolled]  = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'proposals'>('overview')
+  const [treasury,    setTreasury]    = useState<any>(null)
+  const [proposals,   setProposals]   = useState<any[]>([])
+  const [facultyName, setFacultyName] = useState<string | null>(null)
+  const [loading,     setLoading]     = useState(true)
+  const [notFound,    setNotFound]    = useState(false)
+  const [scrolled,    setScrolled]    = useState(false)
 
-  const statsRef      = useRef<HTMLDivElement>(null)
-  const proposalsRef   = useRef<HTMLDivElement>(null)
-  const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null)
+  const statsRef   = useRef<HTMLDivElement>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const el = statsRef.current
@@ -56,6 +50,11 @@ export default function TreasuryPage() {
     const p = await fetchAllProposals(t.pda, count)
     setProposals(p)
     setLoading(false)
+
+    // Real department name if this slug is in the directory; otherwise the
+    // raw slug is shown as-is rather than a dead static lookup.
+    const req = await fetchFacultyBySlug(university)
+    setFacultyName(req?.department ?? null)
   }
 
   useEffect(() => {
@@ -63,17 +62,6 @@ export default function TreasuryPage() {
     intervalRef.current = setInterval(load, 15000)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [university])
-
-  function goOverview() {
-    setActiveTab('overview')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  function goProposals() {
-    setActiveTab('proposals')
-    setFilter(f => (f === 'All' ? 'Active' : f))
-    proposalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   if (loading) return (
     <main className="min-h-screen bg-ink">
@@ -103,21 +91,17 @@ export default function TreasuryPage() {
         <h1 className="font-display text-2xl font-bold text-ledger mb-3">
           Treasury not found
         </h1>
-        <p className="text-body text-sm max-w-xs leading-relaxed mb-6">
-          No on-chain treasury exists for "{university}" yet. If you are a faculty executive, register to initialize it.
+        <p className="text-body text-sm max-w-xs leading-relaxed">
+          No on-chain treasury exists for "{university}" yet. Faculty unions
+          are onboarded directly by LevyLedger admins — if this is your
+          faculty, contact a LevyLedger admin to get registered.
         </p>
-        <Link href="/register" className="inline-block font-data text-xs py-3.5 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-all duration-150 active:scale-[0.98]">
-          REGISTER FACULTY →
-        </Link>
       </div>
     </main>
   )
 
-  const filtered = filter === 'All'
-    ? proposals
-    : proposals.filter(
-        p => Object.keys(p.status)[0].toLowerCase() === filter.toLowerCase()
-      )
+  const displayName = facultyName || university
+  const recentProposals = proposals.slice(0, 3)
 
   return (
     <>
@@ -144,10 +128,10 @@ export default function TreasuryPage() {
           <section className="px-6 pt-8 pb-6 border-b border-rule flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
-                {university.toUpperCase()} Faculty Union
+                UNIBEN Faculty Union
               </p>
               <h1 className="font-display text-2xl font-bold text-ledger">
-                {UNIVERSITIES[university] || university} Treasury
+                {displayName} Treasury
               </h1>
             </div>
             <div>
@@ -159,62 +143,48 @@ export default function TreasuryPage() {
 
           <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 border-b border-rule">
             <MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
-            <MetricCard label="Total Deposited" value={'$' + formatUSDC(treasury.totalDeposited)} />
-            <MetricCard label="Total Spent" value={'$' + formatUSDC(treasury.totalSpent)} />
-            <MetricCard label="Active Proposals" value={proposals.filter(p => Object.keys(p.status)[0] === 'active').length} />
+            <MetricCard label="Reserved Balance"   value={'$' + formatUSDC(treasury.reservedBalance)} />
+            <MetricCard label="Total Deposited"    value={'$' + formatUSDC(treasury.totalDeposited)} />
+            <MetricCard label="Total Spent"        value={'$' + formatUSDC(treasury.totalSpent)} />
+            <MetricCard label="Active Proposals"   value={treasury.activeProposalCount?.toString?.() ?? String(treasury.activeProposalCount)} />
+            <MetricCard label="Total Proposals"    value={treasury.proposalCount?.toString?.() ?? String(treasury.proposalCount)} />
           </div>
 
-          <div ref={proposalsRef}>
-            <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
-              {FILTERS.map(f => (
-                <button
-                  key={f}
-                  onClick={() => { setFilter(f); setActiveTab('proposals') }}
-                  className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
-                    filter === f
-                      ? 'border-uniben text-uniben bg-ink'
-                      : 'border-rule text-ghost hover:border-ghost'
-                  }`}
-                >
-                  {f.toUpperCase()}
-                </button>
-              ))}
-            </section>
+          <section className="px-6 pt-6 pb-28">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-data text-ghost text-xs tracking-widest uppercase">
+                Recent Proposals
+              </p>
+              <Link href={`/${university}/proposals`} className="font-data text-xs text-uniben hover:opacity-80 transition-opacity">
+                View all →
+              </Link>
+            </div>
+            {recentProposals.length === 0 ? (
+              <p className="font-data text-ghost text-sm py-4">No proposals yet.</p>
+            ) : (
+              recentProposals.map(p => (
+                <ProposalCard
+                  key={p.index}
+                  proposal={p}
+                  university={university}
+                  signers={treasury.signers}
+                />
+              ))
+            )}
+          </section>
 
-            <section className="px-6 pt-2 pb-28">
-              {filtered.length === 0 ? (
-                <EmptyState filter={filter} university={university} />
-              ) : (
-                filtered.map(p => (
-                  <ProposalCard
-                    key={p.index}
-                    proposal={p}
-                    university={university}
-                    signers={treasury.signers}
-                  />
-                ))
-              )}
-            </section>
-          </div>
-
-          <BottomNav
-            university={university}
-            activeTab={activeTab}
-            onOverview={goOverview}
-            onProposals={goProposals}
-          />
+          <BottomNav university={university} activeTab="overview" />
         </main>
       </div>
 
       <div className="hidden xl:flex min-h-screen bg-ink">
         <DesktopSidebar university={university} />
         <div className="flex-1 flex flex-col">
-          <DesktopTopBar universityName={UNIVERSITIES[university] || university} />
+          <DesktopTopBar universityName={displayName} />
           <DesktopTreasuryOverview
             university={university}
-            universityName={UNIVERSITIES[university] || university}
             treasury={treasury}
-            proposals={filtered}
+            proposals={recentProposals}
             loading={false}
           />
         </div>
