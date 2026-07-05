@@ -128,21 +128,13 @@ export async function fetchFacultyBySlug(slug: string): Promise<DepartmentReques
   return data as DepartmentRequest | null
 }
 
-export async function markRequestApproved(id: string) {
-  const { error } = await supabase
-    .from('department_requests')
-    .update({ status: 'approved', reviewed_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw error
-}
-
-export async function markRequestRejected(id: string) {
-  const { error } = await supabase
-    .from('department_requests')
-    .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw error
-}
+// Approve/reject used to be plain anon-key updates here. Removed after
+// confirming department_requests had a permissive anon UPDATE policy --
+// any client holding the public anon key could self-approve a fake faculty
+// regardless of what the admin-only UI checks showed. Both actions now go
+// through app/app/api/requests/review/route.ts, which verifies a wallet
+// signature server-side (must match ADMIN_KEY) before writing with the
+// service role key. See that route before reintroducing a client-side path.
 
 // ── Student identity directory ────────────────────────────────────────────
 // Reads only. Writes go through app/app/api/profile/route.ts, which
