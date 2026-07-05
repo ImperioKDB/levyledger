@@ -783,9 +783,9 @@ function AdminContent() {
                       <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)} placeholder="0.00"
                         className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
                     </div>
-                    <button onClick={handleDeposit} disabled={depositTx === 'loading' || !depositAmt}
+                    <button onClick={handleDeposit} disabled={!depositAmt}
                       className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
-                      {depositTx === 'loading' ? 'DEPOSITING...' : 'DEPOSIT TO VAULT'}
+                      DEPOSIT TO VAULT
                     </button>
                   </>
                 ) : (
