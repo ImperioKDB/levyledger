@@ -2,24 +2,23 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { submitDepartmentRequest, generateSlug } from '@/lib/supabase'
+import { submitDepartmentRequest, generateFacultySlug, UNIBEN_UNIVERSITY_NAME } from '@/lib/supabase'
 
 export default function RegisterPage() {
-  const [university, setUniversity]   = useState('')
-  const [department, setDepartment]   = useState('')
-  const [execs, setExecs]             = useState<string[]>(['', '', '', '', ''])
+  const [department, setDepartment]             = useState('')
+  const [execs, setExecs]                       = useState<string[]>(['', '', '', '', ''])
   const [submitterName, setSubmitterName]       = useState('')
   const [submitterContact, setSubmitterContact] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError]   = useState('')
 
-  const slug = university && department ? generateSlug(university, department) : ''
+  const slug = department ? generateFacultySlug(department) : ''
 
   async function handleSubmit() {
     setStatus('loading'); setError('')
     try {
       await submitDepartmentRequest({
-        university, department, slug, execs, submitterName, submitterContact,
+        university: UNIBEN_UNIVERSITY_NAME, department, slug, execs, submitterName, submitterContact,
       })
       setStatus('success')
     } catch (e: any) {
@@ -29,8 +28,7 @@ export default function RegisterPage() {
   }
 
   const canSubmit =
-    university.trim() && department.trim() &&
-    execs.every(e => e.trim().length > 20) // rough pubkey length check
+    department.trim() && execs.every(e => e.trim().length > 20) // rough pubkey length check
 
   if (status === 'success') return (
     <main className="min-h-screen bg-ink px-6 pt-16">
@@ -39,7 +37,7 @@ export default function RegisterPage() {
           Request Submitted
         </p>
         <p className="font-display text-xl font-bold text-ledger mb-3">
-          {department} at {university}
+          {department} · {UNIBEN_UNIVERSITY_NAME}
         </p>
         <p className="text-body text-sm leading-relaxed mb-1">
           Your treasury slug will be:
@@ -66,14 +64,14 @@ export default function RegisterPage() {
 
       <div className="px-6 pt-8 pb-24">
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">
-          Register Your Department
+          Register Your Faculty
         </p>
         <h1 className="font-display text-2xl font-bold text-ledger mb-3">
           Bring transparency to your union
         </h1>
         <p className="text-body text-sm leading-relaxed mb-8">
           Any student can submit this form. A LevyLedger admin reviews and
-          initializes your department's on-chain treasury. This form itself
+          initializes your faculty's on-chain treasury. This form itself
           is not on-chain — the treasury and every naira in it will be,
           once approved.
         </p>
@@ -81,14 +79,17 @@ export default function RegisterPage() {
         <div className="space-y-5">
           <div>
             <label className="font-data text-ghost text-xs block mb-1">University</label>
-            <input value={university} onChange={e => setUniversity(e.target.value)}
-              placeholder="e.g. University of Benin"
-              className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
+            <div className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3">
+              {UNIBEN_UNIVERSITY_NAME} (UNIBEN)
+            </div>
+            <p className="font-data text-ghost text-[10px] mt-1">
+              LevyLedger's MVP is scoped to UNIBEN faculties only.
+            </p>
           </div>
           <div>
-            <label className="font-data text-ghost text-xs block mb-1">Department / Union Name</label>
+            <label className="font-data text-ghost text-xs block mb-1">Faculty / Union Name</label>
             <input value={department} onChange={e => setDepartment(e.target.value)}
-              placeholder="e.g. Computer Science Student Union"
+              placeholder="e.g. Faculty of Engineering Student Union"
               className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
           </div>
 
