@@ -3,8 +3,10 @@
 import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
+import { ADMIN_KEY } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
 import BottomNav from '@/components/BottomNav'
 import EmptyState from '@/components/EmptyState'
@@ -17,6 +19,7 @@ const FILTERS: Filter[] = ['All', 'Active', 'Executed', 'Rejected', 'Expired']
 
 export default function FacultyProposalsPage() {
   const { university } = useParams() as { university: string }
+  const wallet = useWallet()
   const searchParams = useSearchParams()
   const initialFilter = (searchParams.get('filter') || 'all')
   const [treasury,    setTreasury]    = useState<any>(null)
@@ -48,6 +51,9 @@ export default function FacultyProposalsPage() {
   }, [university])
 
   const displayName = facultyName || university
+  const isExec = treasury?.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
 
   const filtered = filter === 'All'
     ? proposals
@@ -105,12 +111,12 @@ export default function FacultyProposalsPage() {
             )}
           </section>
 
-          <BottomNav university={university} activeTab="proposals" />
+          <BottomNav university={university} activeTab="proposals" isAuthorized={isAuthorized} />
         </main>
       </div>
 
       <div className="hidden xl:flex min-h-screen bg-ink">
-        <DesktopSidebar university={university} />
+        <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
           <DesktopTopBar universityName={displayName} />
           <DesktopProposalsList
