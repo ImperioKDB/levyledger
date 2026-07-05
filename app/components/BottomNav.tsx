@@ -8,9 +8,10 @@ type Tab = 'overview' | 'proposals' | 'admin'
 interface Props {
   university?: string
   activeTab?: Tab
+  isAuthorized?: boolean
 }
 
-export default function BottomNav({ university, activeTab = 'overview' }: Props) {
+export default function BottomNav({ university, activeTab = 'overview', isAuthorized = false }: Props) {
   const pathname = usePathname()
   const isAdminPage = pathname.startsWith('/admin')
 
@@ -37,12 +38,14 @@ export default function BottomNav({ university, activeTab = 'overview' }: Props)
           <span className="font-data text-xs tracking-widest">PROPOSALS</span>
         </Link>
 
-        <Link
-          href={university ? `/admin?treasury=${university}` : '/admin'}
-          className={baseClass(adminActive)}
-        >
-          <span className="font-data text-xs tracking-widest">ADMIN</span>
-        </Link>
+        {isAuthorized && (
+          <Link
+            href={university ? `/admin?treasury=${university}` : '/admin'}
+            className={baseClass(adminActive)}
+          >
+            <span className="font-data text-xs tracking-widest">ADMIN</span>
+          </Link>
+        )}
       </div>
     </nav>
   )
