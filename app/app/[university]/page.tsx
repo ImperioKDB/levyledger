@@ -26,8 +26,11 @@ export default function TreasuryPage() {
   const [filter,    setFilter]    = useState<Filter>('All')
   const [notFound,  setNotFound]  = useState(false)
   const [scrolled,  setScrolled]  = useState(false)
-  const statsRef    = useRef<HTMLDivElement>(null)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'proposals'>('overview')
+
+  const statsRef      = useRef<HTMLDivElement>(null)
+  const proposalsRef   = useRef<HTMLDivElement>(null)
+  const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const el = statsRef.current
@@ -61,6 +64,17 @@ export default function TreasuryPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [university])
 
+  function goOverview() {
+    setActiveTab('overview')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function goProposals() {
+    setActiveTab('proposals')
+    setFilter(f => (f === 'All' ? 'Active' : f))
+    proposalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   if (loading) return (
     <main className="min-h-screen bg-ink">
       <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
@@ -89,9 +103,12 @@ export default function TreasuryPage() {
         <h1 className="font-display text-2xl font-bold text-ledger mb-3">
           Treasury not found
         </h1>
-        <p className="text-body text-sm max-w-xs leading-relaxed">
-          No on-chain treasury exists for "{university}" yet.
+        <p className="text-body text-sm max-w-xs leading-relaxed mb-6">
+          No on-chain treasury exists for "{university}" yet. If you are a faculty executive, register to initialize it.
         </p>
+        <Link href="/register" className="inline-block font-data text-xs py-3.5 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-all duration-150 active:scale-[0.98]">
+          REGISTER FACULTY →
+        </Link>
       </div>
     </main>
   )
@@ -105,7 +122,7 @@ export default function TreasuryPage() {
   return (
     <>
       <div className="xl:hidden">
-        <main className="min-h-screen bg-ink">
+        <main className="min-h-screen bg-ink pb-16">
           <header className="sticky top-0 z-40 bg-ink border-b border-rule">
             <div className="px-6 py-4 flex items-center justify-between">
               <Link href="/" className="font-data text-ghost text-xs shrink-0">
@@ -124,54 +141,68 @@ export default function TreasuryPage() {
             </div>
           </header>
 
-          <section className="px-6 pt-8 pb-6 border-b border-rule">
-            <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
-              {university.toUpperCase()} Student Union
-            </p>
-            <h1 className="font-display text-2xl font-bold text-ledger">
-              {UNIVERSITIES[university] || university} Treasury
-            </h1>
+          <section className="px-6 pt-8 pb-6 border-b border-rule flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
+                {university.toUpperCase()} Faculty Union
+              </p>
+              <h1 className="font-display text-2xl font-bold text-ledger">
+                {UNIVERSITIES[university] || university} Treasury
+              </h1>
+            </div>
+            <div>
+              <Link href={`/admin?treasury=${university}`} className="inline-block w-full md:w-auto text-center font-data text-xs tracking-widest py-3 px-6 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+                DEPOSIT DUES →
+              </Link>
+            </div>
           </section>
 
           <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 border-b border-rule">
-<MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
-<MetricCard label="Total Deposited" value={'$' + formatUSDC(treasury.totalDeposited)} />
-<MetricCard label="Total Spent" value={'$' + formatUSDC(treasury.totalSpent)} />
-<MetricCard label="Active Proposals" value={proposals.filter(p => Object.keys(p.status)[0] === 'active').length} />
-</div>
+            <MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
+            <MetricCard label="Total Deposited" value={'$' + formatUSDC(treasury.totalDeposited)} />
+            <MetricCard label="Total Spent" value={'$' + formatUSDC(treasury.totalSpent)} />
+            <MetricCard label="Active Proposals" value={proposals.filter(p => Object.keys(p.status)[0] === 'active').length} />
+          </div>
 
-          <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
-            {FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
-                  filter === f
-                    ? 'border-uniben text-uniben'
-                    : 'border-rule text-ghost hover:border-ghost'
-                }`}
-              >
-                {f.toUpperCase()}
-              </button>
-            ))}
-          </section>
+          <div ref={proposalsRef}>
+            <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
+              {FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => { setFilter(f); setActiveTab('proposals') }}
+                  className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
+                    filter === f
+                      ? 'border-uniben text-uniben bg-ink'
+                      : 'border-rule text-ghost hover:border-ghost'
+                  }`}
+                >
+                  {f.toUpperCase()}
+                </button>
+              ))}
+            </section>
 
-          <section className="px-6 pt-2 pb-28">
-            {filtered.length === 0 ? (
-              <EmptyState filter={filter} university={university} />
-            ) : (
-              filtered.map(p => (
-                <ProposalCard
-                  key={p.index}
-                  proposal={p}
-                  university={university}
-                  signers={treasury.signers}
-                />
-              ))
-            )}
-          </section>
+            <section className="px-6 pt-2 pb-28">
+              {filtered.length === 0 ? (
+                <EmptyState filter={filter} university={university} />
+              ) : (
+                filtered.map(p => (
+                  <ProposalCard
+                    key={p.index}
+                    proposal={p}
+                    university={university}
+                    signers={treasury.signers}
+                  />
+                ))
+              )}
+            </section>
+          </div>
 
-          <BottomNav university={university} />
+          <BottomNav
+            university={university}
+            activeTab={activeTab}
+            onOverview={goOverview}
+            onProposals={goProposals}
+          />
         </main>
       </div>
 
