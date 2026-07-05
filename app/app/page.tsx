@@ -85,14 +85,8 @@ export default function Home() {
         >
           VIEW ALL FACULTIES →
         </Link>
-        <Link
-          href="/register"
-          className="block w-full text-center font-data text-sm tracking-widest py-4 border border-rule text-ghost hover:border-ghost hover:text-body transition-colors"
-        >
-          REGISTER YOUR FACULTY
-        </Link>
         <p className="font-data text-ghost text-xs text-center pt-2">
-          No wallet required to view
+          No wallet required to view · faculties are onboarded directly by LevyLedger admins
         </p>
       </section>
 
