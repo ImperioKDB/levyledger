@@ -96,18 +96,36 @@ export async function fetchApprovedRequests(): Promise<DepartmentRequest[]> {
 }
 
 // Directory used by the homepage aggregate hero and the /universities
-// (faculties) listing page. Filters by slug prefix rather than the free-text
+// (faculties) listing page. Filters by slug rather than the free-text
 // university column, since the slug is the value actually used to derive
-// the on-chain treasury PDA and is guaranteed consistent.
+// the on-chain treasury PDA and is guaranteed consistent. Matches both the
+// per-faculty shape ("uniben-eng") and the bare legacy slug ("uniben") from
+// treasuries initialized before the directory existed.
 export async function fetchApprovedUnibenFaculties(): Promise<DepartmentRequest[]> {
   const { data, error } = await supabase
     .from('department_requests')
     .select('*')
     .eq('status', 'approved')
-    .ilike('slug', 'uniben-%')
+    .or('slug.eq.uniben,slug.ilike.uniben-%')
     .order('department', { ascending: true })
   if (error) throw error
   return data as DepartmentRequest[]
+}
+
+// Looks up a single faculty's directory entry by its on-chain slug. Used to
+// show a real department name (e.g. "Faculty of Computing") instead of the
+// raw slug on faculty-scoped pages. Returns null for slugs that aren't in
+// the directory yet -- callers should fall back to the raw slug, not treat
+// this as an error.
+export async function fetchFacultyBySlug(slug: string): Promise<DepartmentRequest | null> {
+  const { data, error } = await supabase
+    .from('department_requests')
+    .select('*')
+    .eq('slug', slug)
+    .eq('status', 'approved')
+    .maybeSingle()
+  if (error) throw error
+  return data as DepartmentRequest | null
 }
 
 export async function markRequestApproved(id: string) {
