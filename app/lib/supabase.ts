@@ -22,6 +22,14 @@ export interface DepartmentRequest {
   reviewed_at: string | null
 }
 
+export interface StudentProfile {
+  wallet_address: string
+  full_name: string
+  matric_number: string
+  faculty_slug: string
+  created_at: string
+}
+
 export async function submitDepartmentRequest(data: {
   university: string
   department: string
@@ -81,9 +89,34 @@ export async function markRequestRejected(id: string) {
   if (error) throw error
 }
 
-// Slug helper — generates uniben-csc style slugs from raw input
-export function generateSlug(university: string, department: string): string {
+// ── Student identity directory ────────────────────────────────────────────
+// Reads only. Writes go through app/app/api/profile/route.ts, which
+// verifies a wallet signature server-side before upserting with the
+// service role key. This file's anon-key client is read-only for
+// student_profiles by design -- do not add a client-side upsert here.
+
+export async function fetchProfileByWallet(walletAddress: string): Promise<StudentProfile | null> {
+  const { data, error } = await supabase
+    .from('student_profiles')
+    .select('*')
+    .eq('wallet_address', walletAddress)
+    .maybeSingle()
+  if (error) throw error
+  return data as StudentProfile | null
+}
+
+export async function fetchProfilesByWallets(walletAddresses: string[]): Promise<StudentProfile[]> {
+  if (walletAddresses.length === 0) return []
+  const { data, error } = await supabase
+    .from('student_profiles')
+    .select('*')
+    .in('wallet_address', walletAddresses)
+  if (error) throw error
+  return data as StudentProfile[]
+}
+
+export function generateSlug(university: string, faculty: string): string {
   const clean = (s: string) =>
     s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  return `${clean(university)}-${clean(department)}`
+  return `${clean(university)}-${clean(faculty)}`
 }
