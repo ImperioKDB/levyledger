@@ -106,3 +106,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Technical, sharp dot-matrix blueprint background */
+.bg-dot-matrix {
+  background-size: 24px 24px;
+  background-image: radial-gradient(circle, var(--rule) 1px, transparent 1px);
+}
+
+.bg-blueprint {
+  background-size: 48px 48px;
+  background-image: 
+    linear-gradient(to right, var(--rule) 0.5px, transparent 0.5px),
+    linear-gradient(to bottom, var(--rule) 0.5px, transparent 0.5px);
+}
