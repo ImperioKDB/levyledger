@@ -11,7 +11,8 @@ import { useAnchorProgram } from '@/hooks/useAnchorProgram'
 import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError, getLastTreasuryFetchStack, getBundledIdlAccountNames } from '@/lib/queries'
 import * as AnchorPkg from '@coral-xyz/anchor'
 import { getTreasuryPDA, getVaultPDA, getProposalPDA, formatUSDC } from '@/lib/anchor'
-import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
+import { DEVNET_USDC_MINT, CATEGORY_LABELS } from '@/lib/constants'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import { parseAnchorError } from '@/lib/errors'
 import {
   fetchPendingRequests,
@@ -126,7 +127,7 @@ function AdminContent() {
   const uniSlug = params.get('treasury') || 'uniben'
   const wallet  = useWallet()
   const { program, anchorError } = useAnchorProgram()
-  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+  const { isPlatformAdmin, isRootAdmin } = useIsAdmin()
   const isDesktop = useIsDesktop()
 
   const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
@@ -203,7 +204,7 @@ function AdminContent() {
   }
 
   async function loadRequests() {
-    if (!isAdminWallet) { setRequestsLoading(false); return }
+    if (!isPlatformAdmin) { setRequestsLoading(false); return }
     try {
       const r = await fetchPendingRequests()
       setRequests(r)
@@ -214,7 +215,7 @@ function AdminContent() {
   }
 
   useEffect(() => { loadTreasury() }, [uniSlug])
-  useEffect(() => { loadRequests() }, [isAdminWallet])
+  useEffect(() => { loadRequests() }, [isPlatformAdmin])
 
   useEffect(() => {
     async function checkProfile() {
@@ -506,9 +507,15 @@ function AdminContent() {
         </div>
       )}
 
-      {wallet.publicKey && isAdminWallet && (
+      {wallet.publicKey && isPlatformAdmin && (
         <div className="mb-8 border border-uniben p-4">
           <p className="font-data text-uniben text-xs tracking-widest uppercase mb-3">Department Requests</p>
+          {!isRootAdmin && (
+            <p className="font-data text-ghost text-[10px] leading-relaxed mb-3">
+              You can approve or reject requests here. Only the root admin
+              wallet can finalize on-chain initialization once approved.
+            </p>
+          )}
           {requestsLoading ? (
             <p className="font-data text-ghost text-xs animate-pulse">Loading requests...</p>
           ) : requests.length === 0 ? (
@@ -530,10 +537,12 @@ function AdminContent() {
                     </div>
                   </details>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => { setInitSlug(req.slug); setInitSigners([req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5]) }}
-                      className="flex-1 py-2 font-data text-xs border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors"
-                    >LOAD INTO INIT FORM</button>
+                    {isRootAdmin && (
+                      <button
+                        onClick={() => { setInitSlug(req.slug); setInitSigners([req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5]) }}
+                        className="flex-1 py-2 font-data text-xs border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors"
+                      >LOAD INTO INIT FORM</button>
+                    )}
                     <button
                       onClick={() => handleMarkApproved(req)} disabled={rTx === 'loading'}
                       className="flex-1 py-2 font-data text-xs border border-nigerian text-nigerian hover:bg-nigerian hover:text-ink transition-colors disabled:opacity-40"
@@ -829,7 +838,7 @@ function AdminContent() {
       )}
       {isDesktop && (
         <div className="flex min-h-screen bg-ink">
-          <DesktopSidebar university={uniSlug} isAuthorized={isAdminWallet || isExec} />
+          <DesktopSidebar university={uniSlug} isAuthorized={isPlatformAdmin || isExec} />
           <div className="flex-1 flex flex-col">
             <DesktopTopBar universityName={uniSlug.toUpperCase() + " ADMIN"} />
             <div className="p-8 max-w-4xl w-full mx-auto overflow-y-auto">{innerContent}</div>
