@@ -2,26 +2,41 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
+import { fetchApprovedUnibenFaculties } from '@/lib/supabase'
+import { fetchTreasury } from '@/lib/queries'
 import { formatUSDC } from '@/lib/anchor'
-import { STATUS_COLORS } from '@/lib/constants'
 
-const SLUG = 'uniben'
+interface FacultyRow {
+  slug: string
+  department: string
+  balance: number
+  proposals: number
+  live: boolean
+}
 
 export default function LiveHero() {
-  const [treasury,   setTreasury]   = useState<any>(null)
-  const [proposals,  setProposals]  = useState<any[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [noTreasury, setNoTreasury] = useState(false)
+  const [rows, setRows]                   = useState<FacultyRow[]>([])
+  const [approvedCount, setApprovedCount] = useState(0)
+  const [loading, setLoading]             = useState(true)
 
   async function load() {
-    const t = await fetchTreasury(SLUG)
-    if (!t) { setNoTreasury(true); setLoading(false); return }
-    setTreasury(t)
-    const count = typeof t.proposalCount?.toNumber === 'function'
-      ? t.proposalCount.toNumber() : Number(t.proposalCount)
-    const all = await fetchAllProposals(t.pda, count)
-    setProposals(all.slice(0, 3))
+    const requests = await fetchApprovedUnibenFaculties()
+    setApprovedCount(requests.length)
+
+    const results = await Promise.all(
+      requests.map(async (req) => {
+        const t = await fetchTreasury(req.slug)
+        if (!t) return { slug: req.slug, department: req.department, balance: 0, proposals: 0, live: false }
+        const balance = typeof t.availableBalance?.toNumber === 'function'
+          ? t.availableBalance.toNumber() : Number(t.availableBalance)
+        const proposals = typeof t.proposalCount?.toNumber === 'function'
+          ? t.proposalCount.toNumber() : Number(t.proposalCount)
+        return { slug: req.slug, department: req.department, balance, proposals, live: true }
+      })
+    )
+
+    results.sort((a, b) => (b.live ? b.balance : -1) - (a.live ? a.balance : -1))
+    setRows(results)
     setLoading(false)
   }
 
@@ -30,6 +45,11 @@ export default function LiveHero() {
     const iv = setInterval(load, 15000)
     return () => clearInterval(iv)
   }, [])
+
+  const liveRows       = rows.filter(r => r.live)
+  const liveCount      = liveRows.length
+  const totalBalance   = liveRows.reduce((sum, r) => sum + r.balance, 0)
+  const totalProposals = liveRows.reduce((sum, r) => sum + r.proposals, 0)
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) return (
@@ -40,30 +60,30 @@ export default function LiveHero() {
     </div>
   )
 
-  // ── Not initialized — designed, not an error ─────────────────────────────
-  if (noTreasury) return (
+  // ── No faculties live yet — designed, not an error ───────────────────────
+  if (liveCount === 0) return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <p className="font-data text-ghost text-xs tracking-widest uppercase">
-          UNIBEN Student Union Treasury
+          UNIBEN Faculty Treasuries
         </p>
         <span className="font-data text-xs text-ghost border border-rule px-2 py-0.5">
           NOT LIVE
         </span>
       </div>
 
-      {/* Ghosted balance — shows what will appear once live */}
       <p className="font-data font-bold text-rule leading-none mb-3"
         style={{ fontSize: 'clamp(3rem, 14vw, 5rem)' }}>
         $0.00
       </p>
       <p className="text-ghost text-sm mb-6">
-        This treasury will show the real-time USDC vault balance once initialized.
+        {approvedCount === 0
+          ? 'The combined balance across all UNIBEN faculties will appear here once faculties are registered and initialized.'
+          : `${approvedCount} ${approvedCount === 1 ? 'faculty has' : 'faculties have'} been approved and are awaiting on-chain initialization.`}
       </p>
 
-      {/* Preview of what recent activity looks like */}
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-3">
-        Recent Activity
+        Preview
       </p>
       {[
         { label: 'Welfare payment', amount: '$500.00', status: 'EXECUTED' },
@@ -83,92 +103,74 @@ export default function LiveHero() {
           </span>
         </div>
       ))}
-      <p className="font-data text-ghost text-xs mt-4 border-t border-rule pt-4">
-        Preview only — data above is illustrative
-      </p>
+      <Link
+        href="/register"
+        className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1 block hover:text-uniben transition-colors"
+      >
+        Register your faculty →
+      </Link>
     </div>
   )
 
-  // ── Treasury live ────────────────────────────────────────────────────────
+  // ── Aggregate live ───────────────────────────────────────────────────────
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <p className="font-data text-ghost text-xs tracking-widest uppercase">
-          UNIBEN Student Union · Live
+          UNIBEN Faculties · Live
         </p>
         <span className="font-data text-xs text-nigerian border border-nigerian px-2 py-0.5">
           ON-CHAIN
         </span>
       </div>
 
-      {/* Balance — centerpiece */}
       <p className="font-data font-bold text-uniben leading-none mb-2"
         style={{ fontSize: 'clamp(3rem, 14vw, 5rem)' }}>
-        ${formatUSDC(treasury.availableBalance)}
+        ${formatUSDC(totalBalance)}
       </p>
-      <p className="font-data text-ghost text-sm mb-6">USDC · Available in vault</p>
+      <p className="font-data text-ghost text-sm mb-6">
+        USDC · Across {liveCount} of {approvedCount} faculties
+      </p>
 
-      {/* Secondary stats */}
       <div className="flex gap-6 mb-8 border-b border-rule pb-6">
         <div>
-          <p className="font-data text-ghost text-xs mb-1">Total Deposited</p>
-          <p className="font-data text-body text-sm font-bold">
-            ${formatUSDC(treasury.totalDeposited)}
-          </p>
+          <p className="font-data text-ghost text-xs mb-1">Faculties Live</p>
+          <p className="font-data text-body text-sm font-bold">{liveCount}</p>
         </div>
         <div>
-          <p className="font-data text-ghost text-xs mb-1">Total Spent</p>
-          <p className="font-data text-body text-sm font-bold">
-            ${formatUSDC(treasury.totalSpent)}
-          </p>
+          <p className="font-data text-ghost text-xs mb-1">Total Balance</p>
+          <p className="font-data text-body text-sm font-bold">${formatUSDC(totalBalance)}</p>
         </div>
         <div>
           <p className="font-data text-ghost text-xs mb-1">Proposals</p>
-          <p className="font-data text-body text-sm font-bold">
-            {typeof treasury.proposalCount?.toNumber === 'function'
-              ? treasury.proposalCount.toNumber()
-              : Number(treasury.proposalCount)}
-          </p>
+          <p className="font-data text-body text-sm font-bold">{totalProposals}</p>
         </div>
       </div>
 
-      {/* Recent activity */}
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-3">
-        Recent Activity
+        Top Faculties
       </p>
-      {proposals.length === 0 ? (
-        <p className="font-data text-ghost text-sm border-t border-rule pt-4">
-          No proposals yet.
-        </p>
-      ) : (
-        proposals.map(p => {
-          const status = Object.keys(p.status)[0] as string
-          const textColor = (STATUS_COLORS[status.toLowerCase()] || 'text-ghost').split(' ')[0]
-          return (
-            <Link key={p.index} href={`/uniben/proposals/${p.index}`}>
-              <div className="border-t border-rule py-4 flex items-center justify-between group">
-                <div className="min-w-0 flex-1">
-                  <p className="font-data text-ledger font-bold">
-                    ${formatUSDC(p.amount)}
-                    <span className="text-ghost text-xs ml-2 font-normal">USDC</span>
-                  </p>
-                  <p className="text-ghost text-xs truncate mt-0.5 group-hover:text-body transition-colors">
-                    {p.description}
-                  </p>
-                </div>
-                <span className={`font-data text-xs ml-4 shrink-0 ${textColor}`}>
-                  {status.toUpperCase()}
-                </span>
-              </div>
-            </Link>
-          )
-        })
-      )}
+      {liveRows.slice(0, 3).map(r => (
+        <Link key={r.slug} href={`/${r.slug}`}>
+          <div className="border-t border-rule py-4 flex items-center justify-between group">
+            <div className="min-w-0 flex-1">
+              <p className="text-ledger text-sm font-semibold truncate group-hover:text-uniben transition-colors">
+                {r.department}
+              </p>
+              <p className="text-ghost text-xs truncate mt-0.5">{r.proposals} proposals</p>
+            </div>
+            <p className="font-data text-ledger font-bold ml-4 shrink-0">
+              ${formatUSDC(r.balance)}
+            </p>
+          </div>
+        </Link>
+      ))}
+
       <Link
-        href="/uniben"
+        href="/universities"
         className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1 block hover:text-uniben transition-colors"
       >
-        View full treasury →
+        View all faculties →
       </Link>
     </div>
   )
