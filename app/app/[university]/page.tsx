@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
-import { ADMIN_KEY } from '@/lib/constants'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import ProposalCard from '@/components/ProposalCard'
 import TreasuryStats from '@/components/TreasuryStats'
 import MetricCard from '@/components/MetricCard'
@@ -19,6 +19,13 @@ import DesktopTreasuryOverview from '@/components/DesktopTreasuryOverview'
 export default function TreasuryPage() {
   const { university } = useParams() as { university: string }
   const wallet = useWallet()
+  // Called unconditionally, above the loading/notFound early returns below --
+  // useIsAdmin uses useState/useEffect internally, so calling it after a
+  // conditional return would violate the Rules of Hooks and crash the page
+  // the instant `loading` or `notFound` flips (the exact class of bug
+  // flagged in HANDOFF_NOTES: a hook-shape mismatch hitting the very first
+  // render state).
+  const { isPlatformAdmin } = useIsAdmin()
   const [treasury,    setTreasury]    = useState<any>(null)
   const [proposals,   setProposals]   = useState<any[]>([])
   const [facultyName, setFacultyName] = useState<string | null>(null)
@@ -105,8 +112,7 @@ export default function TreasuryPage() {
 
   const displayName = facultyName || university
   const isExec = treasury.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
-  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
-  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
+  const isAuthorized = Boolean(wallet.publicKey && (isPlatformAdmin || isExec))
   const recentProposals = proposals.slice(0, 3)
 
   return (
