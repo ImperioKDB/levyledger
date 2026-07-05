@@ -18,12 +18,39 @@ const connection = new Connection(
   'confirmed'
 )
 
-const FUNDING_KEYPAIR = Keypair.fromSecretKey(
-  Uint8Array.from(JSON.parse(process.env.FUNDING_WALLET_SECRET!))
-)
-const USDC_MINT = new PublicKey(process.env.NEXT_PUBLIC_USDC_MINT!)
-
 const MIN_FUNDING_WALLET_SOL = 0.01
+
+function getFundingKeypair(): Keypair {
+  const raw = process.env.FUNDING_WALLET_SECRET
+  if (!raw) {
+    throw new Error('FUNDING_WALLET_SECRET is not set in environment variables')
+  }
+  let parsed: number[]
+  try {
+    parsed = JSON.parse(raw)
+  } catch (e: any) {
+    throw new Error(
+      'FUNDING_WALLET_SECRET is not valid JSON. Check for extra quotes, ' +
+      'whitespace, or truncation when it was pasted into Vercel. ' +
+      'Parse error: ' + e.message
+    )
+  }
+  if (!Array.isArray(parsed) || parsed.length !== 64) {
+    throw new Error(
+      'FUNDING_WALLET_SECRET must be a JSON array of exactly 64 numbers. ' +
+      'Got ' + (Array.isArray(parsed) ? parsed.length + ' items' : typeof parsed)
+    )
+  }
+  return Keypair.fromSecretKey(Uint8Array.from(parsed))
+}
+
+function getUsdcMint(): PublicKey {
+  const raw = process.env.NEXT_PUBLIC_USDC_MINT
+  if (!raw) {
+    throw new Error('NEXT_PUBLIC_USDC_MINT is not set in environment variables')
+  }
+  return new PublicKey(raw)
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +59,9 @@ export async function POST(req: NextRequest) {
     if (!walletAddress) {
       return NextResponse.json({ error: 'Missing walletAddress' }, { status: 400 })
     }
+
+    const FUNDING_KEYPAIR = getFundingKeypair()
+    const USDC_MINT = getUsdcMint()
 
     const recipientPubkey = new PublicKey(walletAddress)
 
