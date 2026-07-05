@@ -3,8 +3,10 @@
 import { useParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
+import { ADMIN_KEY } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
 import TreasuryStats from '@/components/TreasuryStats'
 import MetricCard from '@/components/MetricCard'
@@ -16,6 +18,7 @@ import DesktopTreasuryOverview from '@/components/DesktopTreasuryOverview'
 
 export default function TreasuryPage() {
   const { university } = useParams() as { university: string }
+  const wallet = useWallet()
   const [treasury,    setTreasury]    = useState<any>(null)
   const [proposals,   setProposals]   = useState<any[]>([])
   const [facultyName, setFacultyName] = useState<string | null>(null)
@@ -101,6 +104,9 @@ export default function TreasuryPage() {
   )
 
   const displayName = facultyName || university
+  const isExec = treasury.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
   const recentProposals = proposals.slice(0, 3)
 
   return (
@@ -173,12 +179,12 @@ export default function TreasuryPage() {
             )}
           </section>
 
-          <BottomNav university={university} activeTab="overview" />
+          <BottomNav university={university} activeTab="overview" isAuthorized={isAuthorized} />
         </main>
       </div>
 
       <div className="hidden xl:flex min-h-screen bg-ink">
-        <DesktopSidebar university={university} />
+        <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
           <DesktopTopBar universityName={displayName} />
           <DesktopTreasuryOverview
