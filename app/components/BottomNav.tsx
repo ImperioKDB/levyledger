@@ -3,21 +3,27 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+type Tab = 'overview' | 'proposals' | 'admin'
+
 interface Props {
   university?: string
+  activeTab?: Tab
+  onOverview?: () => void
+  onProposals?: () => void
 }
 
-export default function BottomNav({ university }: Props) {
+export default function BottomNav({ university, activeTab = 'overview', onOverview, onProposals }: Props) {
   const pathname = usePathname()
-  const isOverview  = university ? pathname === `/${university}` : pathname === '/universities'
-  const isProposals = pathname.includes('/proposals')
-  const isAdmin     = pathname.startsWith('/admin')
+  const isAdminPage = pathname.startsWith('/admin')
 
-  const tabs = [
-    { label: 'Overview',  href: university ? `/${university}` : '/universities', active: isOverview },
-    { label: 'Proposals', href: university ? `/${university}?filter=all` : '/universities', active: isProposals },
-    { label: 'Admin',     href: university ? `/admin?treasury=${university}` : '/admin', active: isAdmin },
-  ]
+  const overviewActive  = !isAdminPage && activeTab === 'overview'
+  const proposalsActive = !isAdminPage && activeTab === 'proposals'
+  const adminActive     = isAdminPage
+
+  const baseClass = (active: boolean) =>
+    `flex-1 flex flex-col items-center py-3 transition-colors ${
+      active ? 'text-uniben border-t border-uniben -mt-px' : 'text-ghost hover:text-body'
+    }`
 
   return (
     <nav
@@ -25,19 +31,32 @@ export default function BottomNav({ university }: Props) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex">
-        {tabs.map(tab => (
-          <Link
-            key={tab.label}
-            href={tab.href}
-            className={`flex-1 flex flex-col items-center py-3 transition-colors ${
-              tab.active
-                ? 'text-uniben border-t border-uniben -mt-px'
-                : 'text-ghost hover:text-body'
-            }`}
-          >
-            <span className="font-data text-xs tracking-widest">{tab.label.toUpperCase()}</span>
+        {onOverview ? (
+          <button onClick={onOverview} className={baseClass(overviewActive)}>
+            <span className="font-data text-xs tracking-widest">OVERVIEW</span>
+          </button>
+        ) : (
+          <Link href={university ? `/${university}` : '/universities'} className={baseClass(overviewActive)}>
+            <span className="font-data text-xs tracking-widest">OVERVIEW</span>
           </Link>
-        ))}
+        )}
+
+        {onProposals ? (
+          <button onClick={onProposals} className={baseClass(proposalsActive)}>
+            <span className="font-data text-xs tracking-widest">PROPOSALS</span>
+          </button>
+        ) : (
+          <Link href={university ? `/${university}` : '/universities'} className={baseClass(proposalsActive)}>
+            <span className="font-data text-xs tracking-widest">PROPOSALS</span>
+          </Link>
+        )}
+
+        <Link
+          href={university ? `/admin?treasury=${university}` : '/admin'}
+          className={baseClass(adminActive)}
+        >
+          <span className="font-data text-xs tracking-widest">ADMIN</span>
+        </Link>
       </div>
     </nav>
   )
