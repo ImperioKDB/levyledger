@@ -23,6 +23,27 @@ function getServiceClient() {
   })
 }
 
+// Delegated review admins (rows in platform_admins) can approve/reject
+// requests through this route. This is deliberately a *separate, weaker*
+// power than init_treasury on-chain, which stays gated to the literal
+// ADMIN_KEY inside the Anchor program itself and is untouched by this
+// change -- see the Trust Boundary section of HANDOFF_NOTES.md before ever
+// widening that on-chain constraint.
+async function isAuthorizedReviewer(walletAddress: string): Promise<boolean> {
+  if (walletAddress === ADMIN_KEY) return true
+  const supabase = getServiceClient()
+  const { data, error } = await supabase
+    .from('platform_admins')
+    .select('wallet_address')
+    .eq('wallet_address', walletAddress)
+    .maybeSingle()
+  if (error) {
+    console.error('[requests/review] platform_admins lookup failed', error)
+    return false
+  }
+  return Boolean(data)
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -39,7 +60,9 @@ export async function POST(req: NextRequest) {
 
     // Reject non-admin wallets before even checking the signature -- a
     // perfectly valid signature from the wrong wallet is still a no.
-    if (walletAddress !== ADMIN_KEY) {
+    // Checks both the hardcoded ADMIN_KEY and delegated platform_admins
+    // membership -- see isAuthorizedReviewer above.
+    if (!(await isAuthorizedReviewer(walletAddress))) {
       return NextResponse.json(
         { error: 'This wallet is not authorized to review requests.' },
         { status: 403 }
