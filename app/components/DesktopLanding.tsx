@@ -29,8 +29,8 @@ export default function DesktopLanding() {
             Student union executives collect millions of naira every year with zero public
             accountability. LevyLedger makes that structurally impossible.
           </p>
-          <Link href="/uniben" className="inline-block font-data text-sm tracking-widest py-4 px-8 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
-            VIEW UNIBEN TREASURY →
+          <Link href="/universities" className="inline-block font-data text-sm tracking-widest py-4 px-8 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
+            VIEW ALL FACULTIES →
           </Link>
         </div>
         <div className="border border-rule bg-paper p-6">
