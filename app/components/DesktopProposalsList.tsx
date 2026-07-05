@@ -14,9 +14,12 @@ interface Props {
   loading: boolean
   filter: Filter
   onFilterChange: (f: Filter) => void
+  threshold?: number
 }
 
-export default function DesktopProposalsList({ university, proposals, loading, filter, onFilterChange }: Props) {
+export default function DesktopProposalsList({ university, proposals, loading, filter, onFilterChange, threshold }: Props) {
+  const denom = threshold || 3
+
   return (
     <div className="p-8 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
@@ -55,13 +58,13 @@ export default function DesktopProposalsList({ university, proposals, loading, f
             const status = Object.keys(p.status)[0]
             const category = Object.keys(p.category)[0]
             return (
-              <Link key={p.index} href={'/proposals/' + p.index + '?treasury=' + university}>
+              <Link key={p.index} href={`/${university}/proposals/${p.index}`}>
                 <div className="grid grid-cols-[80px_1fr_140px_120px_120px_120px] px-5 py-4 border-b border-rule last:border-b-0 items-center hover:bg-lifted transition-colors">
                   <p className="font-data text-ghost text-xs">#{p.index}</p>
                   <p className="text-body text-sm truncate pr-4">{p.description}</p>
                   <p className="font-data text-ghost text-xs">{CATEGORY_LABELS[category] || category}</p>
                   <p className="font-data text-ledger text-sm font-bold">${formatUSDC(p.amount)}</p>
-                  <p className="font-data text-ghost text-xs">{p.signaturesFor}/3</p>
+                  <p className="font-data text-ghost text-xs">{p.signaturesFor}/{denom}</p>
                   <StatusBadge status={status} />
                 </div>
               </Link>
