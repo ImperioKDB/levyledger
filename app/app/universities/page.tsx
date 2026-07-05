@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import MobileHeader from '@/components/MobileHeader'
-import BottomNav from '@/components/BottomNav'
 import VerificationBadge from '@/components/VerificationBadge'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
@@ -46,7 +45,7 @@ export default function FacultiesPage() {
   useEffect(() => { load() }, [])
 
   return (
-    <main className="min-h-screen bg-ink pb-24 pt-16">
+    <main className="min-h-screen bg-ink pb-12 pt-16">
       <MobileHeader />
 
       <section className="px-4 py-6 border-b border-rule">
@@ -86,8 +85,6 @@ export default function FacultiesPage() {
           </div>
         )}
       </section>
-
-      <BottomNav />
     </main>
   )
 }
