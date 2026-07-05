@@ -5,6 +5,12 @@ const SUPABASE_ANON_KEY = 'sb_publishable_n3ICy7zL7VdQnDoROwv32w_YEKrhfyx'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// MVP scope: LevyLedger only serves University of Benin faculties. Every
+// treasury slug is guaranteed to start with "uniben-" via generateFacultySlug,
+// so the fleet can always be located by slug prefix regardless of what free
+// text ends up in the `university` column.
+export const UNIBEN_UNIVERSITY_NAME = 'University of Benin'
+
 export interface DepartmentRequest {
   id: string
   university: string
@@ -38,6 +44,22 @@ export async function submitDepartmentRequest(data: {
   submitterName: string
   submitterContact: string
 }) {
+  // Directory-first guard: block duplicate/flooded requests for a faculty
+  // that already has a pending or approved slug. Manual admin vetting still
+  // happens after this point -- this only stops silent duplicates.
+  const { data: existing, error: checkError } = await supabase
+    .from('department_requests')
+    .select('id')
+    .eq('slug', data.slug)
+    .in('status', ['pending', 'approved'])
+    .maybeSingle()
+  if (checkError) throw checkError
+  if (existing) {
+    throw new Error(
+      'A faculty with this name is already registered or pending review. Contact a LevyLedger admin if you believe this is a mistake.'
+    )
+  }
+
   const { error } = await supabase.from('department_requests').insert({
     university: data.university,
     department: data.department,
@@ -69,6 +91,21 @@ export async function fetchApprovedRequests(): Promise<DepartmentRequest[]> {
     .select('*')
     .eq('status', 'approved')
     .order('reviewed_at', { ascending: false })
+  if (error) throw error
+  return data as DepartmentRequest[]
+}
+
+// Directory used by the homepage aggregate hero and the /universities
+// (faculties) listing page. Filters by slug prefix rather than the free-text
+// university column, since the slug is the value actually used to derive
+// the on-chain treasury PDA and is guaranteed consistent.
+export async function fetchApprovedUnibenFaculties(): Promise<DepartmentRequest[]> {
+  const { data, error } = await supabase
+    .from('department_requests')
+    .select('*')
+    .eq('status', 'approved')
+    .ilike('slug', 'uniben-%')
+    .order('department', { ascending: true })
   if (error) throw error
   return data as DepartmentRequest[]
 }
@@ -115,8 +152,21 @@ export async function fetchProfilesByWallets(walletAddresses: string[]): Promise
   return data as StudentProfile[]
 }
 
+// Kept generic (not hardcoded to UNIBEN) so a future multi-university
+// expansion doesn't require a rewrite. Current MVP only ever calls
+// generateFacultySlug below, which pins the prefix to "uniben-".
 export function generateSlug(university: string, faculty: string): string {
   const clean = (s: string) =>
     s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
   return `${clean(university)}-${clean(faculty)}`
+}
+
+// MVP-scoped slug generator: always prefixed "uniben-", regardless of what
+// a user might type into a university field. Removes the slug-drift risk
+// that free-texting the university name would otherwise introduce (e.g.
+// "Uniben" vs "University of Benin" producing two different slugs for the
+// same faculty).
+export function generateFacultySlug(faculty: string): string {
+  const clean = faculty.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  return `uniben-${clean}`
 }
