@@ -82,27 +82,6 @@ export default function LiveHero() {
           : `${approvedCount} ${approvedCount === 1 ? 'faculty has' : 'faculties have'} been approved and are awaiting on-chain initialization.`}
       </p>
 
-      <p className="font-data text-ghost text-xs tracking-widest uppercase mb-3">
-        Preview
-      </p>
-      {[
-        { label: 'Welfare payment', amount: '$500.00', status: 'EXECUTED' },
-        { label: 'Event logistics', amount: '$120.00', status: 'ACTIVE'   },
-        { label: 'Equipment',       amount: '$800.00', status: 'REJECTED' },
-      ].map((row, i) => (
-        <div key={i} className="border-t border-rule py-3 flex items-center justify-between opacity-30">
-          <div>
-            <p className="font-data text-ledger text-sm font-bold">{row.amount} USDC</p>
-            <p className="text-ghost text-xs">{row.label}</p>
-          </div>
-          <span className={`font-data text-xs ${
-            row.status === 'EXECUTED' ? 'text-nigerian' :
-            row.status === 'ACTIVE'   ? 'text-uniben'   : 'text-void'
-          }`}>
-            {row.status}
-          </span>
-        </div>
-      ))}
       <p className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1">
         Faculties are onboarded directly by LevyLedger admins.
       </p>
