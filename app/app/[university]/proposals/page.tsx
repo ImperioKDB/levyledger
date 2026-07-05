@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
-import { ADMIN_KEY } from '@/lib/constants'
+import { useIsAdmin } from '@/hooks/useIsAdmin'
 import ProposalCard from '@/components/ProposalCard'
 import BottomNav from '@/components/BottomNav'
 import EmptyState from '@/components/EmptyState'
@@ -52,8 +52,8 @@ export default function FacultyProposalsPage() {
 
   const displayName = facultyName || university
   const isExec = treasury?.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
-  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
-  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
+  const { isPlatformAdmin } = useIsAdmin()
+  const isAuthorized = Boolean(wallet.publicKey && (isPlatformAdmin || isExec))
 
   const filtered = filter === 'All'
     ? proposals
