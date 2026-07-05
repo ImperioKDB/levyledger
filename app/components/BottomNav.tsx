@@ -8,11 +8,9 @@ type Tab = 'overview' | 'proposals' | 'admin'
 interface Props {
   university?: string
   activeTab?: Tab
-  onOverview?: () => void
-  onProposals?: () => void
 }
 
-export default function BottomNav({ university, activeTab = 'overview', onOverview, onProposals }: Props) {
+export default function BottomNav({ university, activeTab = 'overview' }: Props) {
   const pathname = usePathname()
   const isAdminPage = pathname.startsWith('/admin')
 
@@ -31,25 +29,13 @@ export default function BottomNav({ university, activeTab = 'overview', onOvervi
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex">
-        {onOverview ? (
-          <button onClick={onOverview} className={baseClass(overviewActive)}>
-            <span className="font-data text-xs tracking-widest">OVERVIEW</span>
-          </button>
-        ) : (
-          <Link href={university ? `/${university}` : '/universities'} className={baseClass(overviewActive)}>
-            <span className="font-data text-xs tracking-widest">OVERVIEW</span>
-          </Link>
-        )}
+        <Link href={university ? `/${university}` : '/universities'} className={baseClass(overviewActive)}>
+          <span className="font-data text-xs tracking-widest">OVERVIEW</span>
+        </Link>
 
-        {onProposals ? (
-          <button onClick={onProposals} className={baseClass(proposalsActive)}>
-            <span className="font-data text-xs tracking-widest">PROPOSALS</span>
-          </button>
-        ) : (
-          <Link href={university ? `/${university}` : '/universities'} className={baseClass(proposalsActive)}>
-            <span className="font-data text-xs tracking-widest">PROPOSALS</span>
-          </Link>
-        )}
+        <Link href={university ? `/${university}/proposals` : '/universities'} className={baseClass(proposalsActive)}>
+          <span className="font-data text-xs tracking-widest">PROPOSALS</span>
+        </Link>
 
         <Link
           href={university ? `/admin?treasury=${university}` : '/admin'}
