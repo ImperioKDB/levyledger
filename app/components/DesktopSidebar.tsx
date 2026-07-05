@@ -11,7 +11,7 @@ export default function DesktopSidebar({ university }: { university: string }) {
       <nav className="flex-1 py-4">
         {[
           { label: 'Overview',      href: `/${university}` },
-          { label: 'Proposals',     href: `/${university}?filter=all` },
+          { label: 'Proposals',     href: `/${university}/proposals` },
           { label: 'Admin',         href: `/admin?treasury=${university}` },
           { label: 'All Faculties', href: '/universities' },
         ].map(item => (
