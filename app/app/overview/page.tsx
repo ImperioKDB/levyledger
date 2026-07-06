@@ -1,4 +1,3 @@
-\
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -78,7 +77,7 @@ export default function OverviewPage() {
       </Link>
 
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
-        Aggregate -- every approved faculty
+        Aggregate — every approved faculty
       </p>
       <h1 className="font-display font-bold text-ledger text-3xl mb-8">
         UNIBEN Faculties Treasury
@@ -86,13 +85,13 @@ export default function OverviewPage() {
 
       {anyFailed && !loading && (
         <div className="border border-yellow-600/40 bg-yellow-950/20 text-yellow-400 text-xs font-data px-4 py-3 mb-6">
-          One or more faculty treasuries failed to load -- totals below may be
+          One or more faculty treasuries failed to load — totals below may be
           understated. Not a confirmation that any faculty has zero balance.
         </div>
       )}
 
       {loading ? (
-        <p className="text-ghost text-sm">Loading aggregate treasury data...</p>
+        <p className="text-ghost text-sm">Loading aggregate treasury data…</p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 mb-10">
