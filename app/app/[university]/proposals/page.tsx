@@ -4,7 +4,8 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import RoleBadge from '@/components/RoleBadge'
+import ConnectWallet from '@/components/ConnectWallet'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
@@ -14,7 +15,6 @@ import EmptyState from '@/components/EmptyState'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopProposalsList from '@/components/DesktopProposalsList'
-import RoleBadge from '@/components/RoleBadge'
 
 type Filter = 'All' | 'Active' | 'Executed' | 'Rejected' | 'Expired'
 const FILTERS: Filter[] = ['All', 'Active', 'Executed', 'Rejected', 'Expired']
@@ -75,7 +75,7 @@ export default function FacultyProposalsPage() {
             </Link>
             <div className="flex items-center gap-2 shrink-0">
               <RoleBadge connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
-              <WalletMultiButton />
+              <ConnectWallet />
             </div>
           </header>
 
