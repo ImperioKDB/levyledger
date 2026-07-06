@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
-import { useIsAdmin } from '@/hooks/useIsAdmin'
+import { ADMIN_KEY } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
 import TreasuryStats from '@/components/TreasuryStats'
 import MetricCard from '@/components/MetricCard'
@@ -15,17 +15,11 @@ import BottomNav from '@/components/BottomNav'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopTreasuryOverview from '@/components/DesktopTreasuryOverview'
+import RoleBadge from '@/components/RoleBadge'
 
 export default function TreasuryPage() {
   const { university } = useParams() as { university: string }
   const wallet = useWallet()
-  // Called unconditionally, above the loading/notFound early returns below --
-  // useIsAdmin uses useState/useEffect internally, so calling it after a
-  // conditional return would violate the Rules of Hooks and crash the page
-  // the instant `loading` or `notFound` flips (the exact class of bug
-  // flagged in HANDOFF_NOTES: a hook-shape mismatch hitting the very first
-  // render state).
-  const { isPlatformAdmin } = useIsAdmin()
   const [treasury,    setTreasury]    = useState<any>(null)
   const [proposals,   setProposals]   = useState<any[]>([])
   const [facultyName, setFacultyName] = useState<string | null>(null)
@@ -112,7 +106,8 @@ export default function TreasuryPage() {
 
   const displayName = facultyName || university
   const isExec = treasury.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
-  const isAuthorized = Boolean(wallet.publicKey && (isPlatformAdmin || isExec))
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
   const recentProposals = proposals.slice(0, 3)
 
   return (
@@ -121,9 +116,12 @@ export default function TreasuryPage() {
         <main className="min-h-screen bg-ink pb-16">
           <header className="sticky top-0 z-40 bg-ink border-b border-rule">
             <div className="px-6 py-4 flex items-center justify-between">
-              <Link href="/" className="font-data text-ghost text-xs shrink-0">
-                ← LEVYLEDGER
-              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href="/" className="font-data text-ghost text-xs">
+                  ← LEVYLEDGER
+                </Link>
+                <RoleBadge connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
+              </div>
               <div className={`transition-opacity duration-200 ${
                 scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}>
@@ -192,7 +190,7 @@ export default function TreasuryPage() {
       <div className="hidden xl:flex min-h-screen bg-ink">
         <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
-          <DesktopTopBar universityName={displayName} />
+          <DesktopTopBar universityName={displayName} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
           <DesktopTreasuryOverview
             university={university}
             treasury={treasury}
