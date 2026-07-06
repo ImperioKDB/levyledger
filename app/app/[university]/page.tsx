@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
@@ -121,6 +122,7 @@ export default function TreasuryPage() {
                   ← LEVYLEDGER
                 </Link>
                 <RoleBadge connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
+                <div className="shrink-0"><WalletMultiButton /></div>
               </div>
               <div className={`transition-opacity duration-200 ${
                 scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -145,7 +147,7 @@ export default function TreasuryPage() {
               </h1>
             </div>
             <div>
-              <Link href={`/admin?treasury=${university}`} className="inline-block w-full md:w-auto text-center font-data text-xs tracking-widest py-3 px-6 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+              <Link href={`/${university}/deposit`} className="inline-block w-full md:w-auto text-center font-data text-xs tracking-widest py-3 px-6 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
                 DEPOSIT DUES →
               </Link>
             </div>
