@@ -19,7 +19,8 @@
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/spl-token": "^0.4.6",
     "@supabase/supabase-js": "^2.45.4",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "html-to-image": "^1.11.11"
   },
   "devDependencies": {
     "typescript": "^5",
