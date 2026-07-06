@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-type Tab = 'overview' | 'proposals' | 'admin'
+type Tab = 'overview' | 'proposals' | 'deposit' | 'admin'
 
 interface Props {
   university?: string
@@ -17,6 +17,7 @@ export default function BottomNav({ university, activeTab = 'overview', isAuthor
 
   const overviewActive  = !isAdminPage && activeTab === 'overview'
   const proposalsActive = !isAdminPage && activeTab === 'proposals'
+  const depositActive   = !isAdminPage && activeTab === 'deposit'
   const adminActive     = isAdminPage
 
   const baseClass = (active: boolean) =>
@@ -36,6 +37,10 @@ export default function BottomNav({ university, activeTab = 'overview', isAuthor
 
         <Link href={university ? `/${university}/proposals` : '/universities'} className={baseClass(proposalsActive)}>
           <span className="font-data text-xs tracking-widest">PROPOSALS</span>
+        </Link>
+
+        <Link href={university ? `/${university}/deposit` : '/universities'} className={baseClass(depositActive)}>
+          <span className="font-data text-xs tracking-widest">DEPOSIT</span>
         </Link>
 
         {isAuthorized && (
