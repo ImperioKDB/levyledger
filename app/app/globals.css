@@ -98,6 +98,7 @@ body {
 .wallet-adapter-modal-wrapper {
   background: var(--paper) !important;
   border: 1px solid var(--rule) !important;
+  font-family: var(--font-body), 'DM Sans', sans-serif !important;
 }
 .wallet-adapter-modal-title {
   font-family: var(--font-display), 'Space Grotesk', sans-serif !important;
@@ -105,6 +106,42 @@ body {
 }
 .wallet-adapter-modal-list li            { background: var(--lifted) !important; }
 .wallet-adapter-modal-list li:hover      { background: var(--rule)   !important; }
+.wallet-adapter-modal-list {
+  margin: 0 !important;
+}
+.wallet-adapter-modal-list li {
+  border: 1px solid var(--rule) !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  font-family: var(--font-data), 'Space Mono', monospace !important;
+  font-size: 13px !important;
+}
+.wallet-adapter-modal-list li:hover {
+  border-color: var(--uniben) !important;
+}
+.wallet-adapter-modal-list li img {
+  width: 32px !important;
+  height: 32px !important;
+  flex-shrink: 0 !important;
+}
+.wallet-adapter-modal-list-more {
+  color: var(--ghost) !important;
+  font-family: var(--font-data), monospace !important;
+  font-size: 12px !important;
+}
+.wallet-adapter-modal-button-close {
+  background: var(--rule) !important;
+}
+
+@keyframes progress-indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+.progress-indeterminate {
+  animation: progress-indeterminate 1.1s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
