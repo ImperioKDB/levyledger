@@ -165,9 +165,9 @@ pub mod levyledger {
                 // real transfer is about to happen. Rejecting a proposal never
                 // reaches this branch, so a recipient without an existing USDC ATA
                 // no longer blocks a reject vote.
-                let recipient_ata = Account::<TokenAccount>::try_from(
-                    &ctx.accounts.recipient_token_account.to_account_info()
-                ).map_err(|_| error!(LevyError::InvalidRecipient))?;
+                let recipient_account_info = ctx.accounts.recipient_token_account.to_account_info();
+                let recipient_ata = Account::<TokenAccount>::try_from(&recipient_account_info)
+                    .map_err(|_| error!(LevyError::InvalidRecipient))?;
 
                 require!(
                     recipient_ata.owner == ctx.accounts.proposal.recipient,
