@@ -20,8 +20,11 @@ export default function BottomNav({ university, activeTab = 'overview', isAuthor
   const depositActive   = !isAdminPage && activeTab === 'deposit'
   const adminActive     = isAdminPage
 
+  // tracking-wide (not tracking-widest) plus horizontal padding keeps the
+  // longest label ("PROPOSALS") from overflowing its flex-1 column and
+  // getting clipped by the screen edge on the rightmost tab.
   const baseClass = (active: boolean) =>
-    `flex-1 flex flex-col items-center py-3 transition-colors ${
+    `flex-1 flex flex-col items-center px-1 py-3 transition-colors ${
       active ? 'text-uniben border-t border-uniben -mt-px' : 'text-ghost hover:text-body'
     }`
 
@@ -32,15 +35,15 @@ export default function BottomNav({ university, activeTab = 'overview', isAuthor
     >
       <div className="flex">
         <Link href={university ? `/${university}` : '/universities'} className={baseClass(overviewActive)}>
-          <span className="font-data text-xs tracking-widest">OVERVIEW</span>
+          <span className="font-data text-[10px] tracking-wide whitespace-nowrap">OVERVIEW</span>
         </Link>
 
         <Link href={university ? `/${university}/proposals` : '/universities'} className={baseClass(proposalsActive)}>
-          <span className="font-data text-xs tracking-widest">PROPOSALS</span>
+          <span className="font-data text-[10px] tracking-wide whitespace-nowrap">PROPOSALS</span>
         </Link>
 
         <Link href={university ? `/${university}/deposit` : '/universities'} className={baseClass(depositActive)}>
-          <span className="font-data text-xs tracking-widest">DEPOSIT</span>
+          <span className="font-data text-[10px] tracking-wide whitespace-nowrap">DEPOSIT</span>
         </Link>
 
         {isAuthorized && (
@@ -48,7 +51,7 @@ export default function BottomNav({ university, activeTab = 'overview', isAuthor
             href={university ? `/admin?treasury=${university}` : '/admin'}
             className={baseClass(adminActive)}
           >
-            <span className="font-data text-xs tracking-widest">ADMIN</span>
+            <span className="font-data text-[10px] tracking-wide whitespace-nowrap">ADMIN</span>
           </Link>
         )}
       </div>
