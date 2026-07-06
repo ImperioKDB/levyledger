@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
-import { useIsAdmin } from '@/hooks/useIsAdmin'
+import { ADMIN_KEY } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
 import BottomNav from '@/components/BottomNav'
 import EmptyState from '@/components/EmptyState'
@@ -52,8 +52,8 @@ export default function FacultyProposalsPage() {
 
   const displayName = facultyName || university
   const isExec = treasury?.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
-  const { isPlatformAdmin } = useIsAdmin()
-  const isAuthorized = Boolean(wallet.publicKey && (isPlatformAdmin || isExec))
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
 
   const filtered = filter === 'All'
     ? proposals
@@ -118,7 +118,7 @@ export default function FacultyProposalsPage() {
       <div className="hidden xl:flex min-h-screen bg-ink">
         <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
-          <DesktopTopBar universityName={displayName} />
+          <DesktopTopBar universityName={displayName} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
           <DesktopProposalsList
             university={university}
             proposals={filtered}
