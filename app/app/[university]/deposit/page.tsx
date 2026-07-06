@@ -12,12 +12,12 @@ import { useAnchorProgram } from '@/hooks/useAnchorProgram'
 import { fetchTreasury } from '@/lib/queries'
 import { fetchFacultyBySlug, fetchProfileByWallet } from '@/lib/supabase'
 import { getTreasuryPDA, getVaultPDA, formatUSDC } from '@/lib/anchor'
-import { DEVNET_USDC_MINT } from '@/lib/constants'
+import { DEVNET_USDC_MINT, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
-import BottomNav from '@/components/BottomNav'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
+import BottomNav from '@/components/BottomNav'
 
 const USDC_MINT = new PublicKey(DEVNET_USDC_MINT)
 const EXPLORER  = 'https://explorer.solana.com/tx'
@@ -207,6 +207,9 @@ export default function DepositPage() {
   }
 
   const displayName = facultyName || university
+  const isExec = treasury?.signers?.some((s: any) => s.toString() === wallet.publicKey?.toString())
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+  const isAuthorized = Boolean(wallet.publicKey && (isAdminWallet || isExec))
 
   const body = (
     <div className="max-w-lg mx-auto">
@@ -310,12 +313,12 @@ export default function DepositPage() {
             <Link href={`/${university}`} className="font-data text-ghost text-xs">← {displayName.toUpperCase()}</Link>
           </header>
           <div className="px-6 pt-8">{body}</div>
-          <BottomNav university={university} activeTab="deposit" />
+          <BottomNav university={university} activeTab="deposit" isAuthorized={isAuthorized} />
         </main>
       )}
       {isDesktop && (
         <div className="flex min-h-screen bg-ink">
-          <DesktopSidebar university={university} />
+          <DesktopSidebar university={university} isAuthorized={isAuthorized} />
           <div className="flex-1 flex flex-col">
             <DesktopTopBar universityName={displayName} connected={!!wallet.publicKey} isAdmin={false} isExec={false} />
             <div className="p-8 overflow-y-auto">{body}</div>
