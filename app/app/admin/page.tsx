@@ -15,7 +15,6 @@ import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
 import {
   fetchPendingRequests,
-  fetchProfileByWallet,
   DepartmentRequest,
 } from '@/lib/supabase'
 import DesktopSidebar from '@/components/DesktopSidebar'
@@ -25,7 +24,7 @@ import { useIsDesktop } from '@/hooks/useIsDesktop'
 const USDC_MINT = new PublicKey(DEVNET_USDC_MINT)
 const EXPLORER  = 'https://explorer.solana.com/tx'
 
-type Tab     = 'sign' | 'propose' | 'deposit'
+type Tab     = 'sign' | 'propose'
 type TxState = 'idle' | 'loading' | 'success' | 'error'
 
 function TxResult({
@@ -137,18 +136,6 @@ function AdminContent() {
   const [tab,         setTab]         = useState<Tab>('sign')
   const [confirm,     setConfirm]     = useState<string | null>(null)
 
-  const [depositAmt,  setDepositAmt]  = useState('')
-  const [depositTx,   setDepositTx]   = useState<TxState>('idle')
-  const [depositSig,  setDepositSig]  = useState('')
-  const [depositErr,  setDepositErr]  = useState('')
-  const [successAmt,  setSuccessAmt]  = useState('')
-
-  // NEW: faucet button state — separate from the deposit tx state so
-  // funding and depositing show independent, non-conflicting UI.
-  const [fundTx,  setFundTx]  = useState<TxState>('idle')
-  const [fundSig, setFundSig] = useState('')
-  const [fundErr, setFundErr] = useState('')
-
   const [propAmt,     setPropAmt]     = useState('')
   const [propRecip,   setPropRecip]   = useState('')
   const [propCat,     setPropCat]     = useState('welfare')
@@ -157,12 +144,6 @@ function AdminContent() {
   const [proposeSig,  setProposeSig]  = useState('')
   const [proposeErr,  setProposeErr]  = useState('')
   const [successPropAmt, setSuccessPropAmt] = useState('')
-  const [profile, setProfile] = useState<any>(null)
-  const [checkingProfile, setCheckingProfile] = useState(false)
-  const [regName, setRegName] = useState('')
-  const [regMatric, setRegMatric] = useState('')
-  const [regTx, setRegTx] = useState<TxState>('idle')
-  const [regErr, setRegErr] = useState('')
 
   const [initSigners, setInitSigners] = useState<string[]>(['','','','',''])
   const [initSlug,    setInitSlug]    = useState(uniSlug)
@@ -216,21 +197,6 @@ function AdminContent() {
   useEffect(() => { loadTreasury() }, [uniSlug])
   useEffect(() => { loadRequests() }, [isAdminWallet])
 
-  useEffect(() => {
-    async function checkProfile() {
-      if (!wallet.publicKey) { setProfile(null); return }
-      setCheckingProfile(true)
-      try {
-        const p = await fetchProfileByWallet(wallet.publicKey.toString())
-        setProfile(p)
-      } catch (err) {
-        console.error('[profile] check failed:', err)
-      }
-      setCheckingProfile(false)
-    }
-    checkProfile()
-  }, [wallet.publicKey])
-
   const execIndex = treasury
     ? treasury.signers.findIndex((s: any) => s.toString() === wallet.publicKey?.toString())
     : -1
@@ -241,12 +207,6 @@ function AdminContent() {
     const status = Object.keys(p.status)[0]
     return status === 'active' && !p.signedBy?.[execIndex] && !p.votedAgainst?.[execIndex]
   })
-
-  useEffect(() => {
-    if (treasury && !isExec && (tab === 'sign' || tab === 'propose')) {
-      setTab('deposit')
-    }
-  }, [treasury, isExec, tab])
 
   async function handleInit() {
     if (!wallet.publicKey) return
@@ -313,58 +273,6 @@ function AdminContent() {
     await handleReviewRequest(req, 'reject')
   }
 
-  async function handleDeposit() {
-    if (!wallet.publicKey) return
-    if (!program) {
-      setDepositErr('Program not ready. Please refresh and try again.')
-      setDepositTx('error'); return
-    }
-    if (!treasury) return
-    setDepositTx('loading'); setDepositErr('')
-    try {
-      const currentAmt = depositAmt
-      const amount = new BN(Math.floor(parseFloat(currentAmt) * 1_000_000))
-      const [treasuryPDA] = getTreasuryPDA(uniSlug)
-      const [vaultPDA]    = getVaultPDA(treasuryPDA)
-      const depositorATA  = await getAssociatedTokenAddress(USDC_MINT, wallet.publicKey)
-      const sig = await (program.methods as any)
-        .deposit(amount)
-        .accounts({
-          depositor: wallet.publicKey, treasury: treasuryPDA,
-          depositorTokenAccount: depositorATA, vault: vaultPDA,
-          usdcMint: USDC_MINT, tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc()
-      setSuccessAmt(currentAmt)
-      setDepositSig(sig); setDepositTx('success')
-      setDepositAmt(''); await loadTreasury()
-    } catch (e: any) {
-      setDepositErr(parseAnchorError(e)); setDepositTx('error')
-    }
-  }
-
-  // NEW: calls the /api/fund serverless route. Independent state from
-  // handleDeposit so funding and depositing never overwrite each other's
-  // UI feedback if run back to back.
-  async function handleFund() {
-    if (!wallet.publicKey) return
-    setFundTx('loading'); setFundErr('')
-    try {
-      const res = await fetch('/api/fund', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: wallet.publicKey.toString() }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Faucet request failed')
-      setFundSig(data.signature)
-      setFundTx('success')
-    } catch (e: any) {
-      setFundErr(e.message || 'Faucet request failed')
-      setFundTx('error')
-    }
-  }
-
   async function handlePropose() {
     if (!wallet.publicKey) return
     if (!program) {
@@ -395,43 +303,6 @@ function AdminContent() {
       await loadTreasury()
     } catch (e: any) {
       setProposeErr(parseAnchorError(e)); setProposeTx('error')
-    }
-  }
-
-  async function handleRegisterProfile() {
-    if (!wallet.publicKey || !wallet.signMessage) return
-    setRegTx('loading'); setRegErr('')
-    try {
-      const messageStr = `Registering LevyLedger profile: ${regName.trim()} (${regMatric.trim()})`
-      const messageBytes = new TextEncoder().encode(messageStr)
-      const signatureBytes = await wallet.signMessage(messageBytes)
-      const signatureHex = Buffer.from(signatureBytes).toString('hex')
-
-      const r = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: wallet.publicKey.toString(),
-          fullName: regName.trim(),
-          matricNumber: regMatric.trim(),
-          facultySlug: uniSlug,
-          signature: signatureHex,
-          message: messageStr,
-        }),
-      })
-      const res = await r.json()
-      if (!r.ok) throw new Error(res.error || 'Failed to save profile.')
-
-      setProfile({
-        wallet_address: wallet.publicKey.toString(),
-        full_name: regName.trim(),
-        matric_number: regMatric.trim(),
-        faculty_slug: uniSlug,
-      })
-      setRegTx('success')
-    } catch (e: any) {
-      setRegErr(e.message || 'Failed to save profile. Please try again.')
-      setRegTx('error')
     }
   }
 
@@ -613,21 +484,26 @@ function AdminContent() {
         </div>
       )}
 
-      {wallet.publicKey && !loading && treasury && (
+      {wallet.publicKey && !loading && treasury && !isExec && (
+        <div className="border border-rule p-6 space-y-4">
+          <p className="font-data text-ghost text-xs tracking-widest uppercase">Not An Exec</p>
+          <p className="text-body text-sm leading-relaxed">
+            This wallet isn't one of the 5 registered exec signers for {uniSlug.toUpperCase()}.
+            This page is for signing and proposing spending only.
+          </p>
+          <Link href={`/${uniSlug}/deposit`}
+            className="inline-block font-data text-xs tracking-widest py-3 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
+            GO TO DEPOSIT →
+          </Link>
+        </div>
+      )}
+
+      {wallet.publicKey && !loading && treasury && isExec && (
         <div>
           <div className="border border-rule p-4 mb-6 flex items-center justify-between">
             <div>
-              {isExec ? (
-                <>
-                  <p className="font-data text-nigerian text-xs tracking-widest uppercase mb-1">Authorized · Exec #{execIndex + 1}</p>
-                  <p className="font-data text-ghost text-xs">{wallet.publicKey.toString().slice(0, 8)}...{wallet.publicKey.toString().slice(-6)}</p>
-                </>
-              ) : (
-                <>
-                  <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">Connected (Read-Only / Deposit)</p>
-                  <p className="font-data text-ghost text-xs">{wallet.publicKey.toString().slice(0, 8)}...{wallet.publicKey.toString().slice(-6)}</p>
-                </>
-              )}
+              <p className="font-data text-nigerian text-xs tracking-widest uppercase mb-1">Authorized · Exec #{execIndex + 1}</p>
+              <p className="font-data text-ghost text-xs">{wallet.publicKey.toString().slice(0, 8)}...{wallet.publicKey.toString().slice(-6)}</p>
             </div>
             <div className="text-right">
               <p className="font-data text-ghost text-xs mb-1">Vault</p>
@@ -636,8 +512,8 @@ function AdminContent() {
           </div>
 
           <div className="flex border-b border-rule mb-6 overflow-x-auto no-scrollbar">
-            {(isExec ? ['sign', 'propose', 'deposit'] : ['deposit']).map(t => (
-              <button key={t} onClick={() => setTab(t as Tab)}
+            {(['sign', 'propose'] as Tab[]).map(t => (
+              <button key={t} onClick={() => setTab(t)}
                 className={`shrink-0 px-4 py-3 font-data text-xs tracking-widest transition-colors relative ${tab === t ? 'text-uniben' : 'text-ghost hover:text-body'}`}>
                 {t.toUpperCase()}
                 {tab === t && <span className="absolute bottom-0 left-0 right-0 h-px bg-uniben" />}
@@ -727,90 +603,6 @@ function AdminContent() {
             </div>
           )}
 
-          {tab === 'deposit' && (
-            <div className="space-y-4">
-              {checkingProfile ? (
-                <p className="font-data text-ghost text-xs animate-pulse">Verifying student profile...</p>
-              ) : !profile ? (
-                <div className="space-y-4 border border-uniben p-5 bg-paper/30">
-                  <p className="font-data text-uniben text-[10px] tracking-widest uppercase">Student Profile Required</p>
-                  <p className="text-body text-xs leading-relaxed">
-                    Dues payments on LevyLedger are public and transparent. Register your name and matric number
-                    once to link them with your connected wallet before continuing.
-                  </p>
-                  <div>
-                    <label className="font-data text-ghost text-xs block mb-1">Full Name</label>
-                    <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="e.g. Chinedu Okeke"
-                      className="w-full bg-ink border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
-                  </div>
-                  <div>
-                    <label className="font-data text-ghost text-xs block mb-1">Matriculation Number</label>
-                    <input value={regMatric} onChange={e => setRegMatric(e.target.value)} placeholder="e.g. ENG1802345"
-                      className="w-full bg-ink border border-rule text-ledger font-data text-xs px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
-                  </div>
-                  <button onClick={handleRegisterProfile}
-                    disabled={regTx === 'loading' || !regName.trim() || !regMatric.trim() || !wallet.signMessage}
-                    className="w-full bg-uniben text-ink font-data text-xs py-3.5 tracking-widest hover:opacity-90 disabled:opacity-40 transition-all duration-150 active:scale-[0.98]">
-                    {regTx === 'loading' ? 'SAVING PROFILE...' : 'SAVE PROFILE & CONTINUE'}
-                  </button>
-                  {regErr && <p className="font-data text-void text-xs mt-2">{regErr}</p>}
-                </div>
-              ) : (
-                depositTx === 'idle' ? (
-                  <>
-                    <div className="border border-rule p-4 bg-paper/50 space-y-1">
-                      <p className="font-data text-uniben text-[10px] tracking-widest uppercase">Linked Profile</p>
-                      <p className="font-display font-semibold text-ledger text-sm">{profile.full_name}</p>
-                      <p className="font-data text-ghost text-xs">{profile.matric_number} · {uniSlug.toUpperCase()}</p>
-                    </div>
-                    <div className="border-b border-rule pb-4">
-                      <p className="font-data text-ghost text-xs mb-1">Current vault balance</p>
-                      <p className="font-data text-uniben text-2xl font-bold">${formatUSDC(treasury.availableBalance)} USDC</p>
-                    </div>
-                    <div className="border border-uniben p-3 bg-paper/20">
-                      <p className="text-body text-xs leading-relaxed">
-                        Anyone can deposit — students can pay dues directly into this vault from their own wallet,
-                        or an exec can deposit collected off-chain funds. Both paths are equally valid.
-                      </p>
-                    </div>
-
-                    {/* NEW: Fund Wallet button — calls /api/fund. Own state, own result block,
-                        independent of the deposit form below so a fund action and a deposit
-                        action never overwrite each other's feedback. */}
-                    {fundTx === 'idle' && (
-                      <div className="border border-pending p-4">
-                        <p className="font-data text-pending text-xs tracking-widest uppercase mb-1">Need Devnet USDC?</p>
-                        <p className="text-body text-xs leading-relaxed mb-3">
-                          Tap below to instantly receive test USDC in your connected wallet — no external faucet, no captcha.
-                        </p>
-                        <button onClick={handleFund}
-                          className="w-full py-3 font-data text-xs tracking-widest border border-pending text-pending hover:bg-pending hover:text-ink transition-colors">
-                          FUND WALLET (DEVNET)
-                        </button>
-                      </div>
-                    )}
-                    {fundTx !== 'idle' && (
-                      <TxResult state={fundTx} sig={fundSig} error={fundErr}
-                        onClose={() => { setFundTx('idle'); setFundSig(''); setFundErr('') }} />
-                    )}
-
-                    <div>
-                      <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
-                      <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)} placeholder="0.00"
-                        className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
-                    </div>
-                    <button onClick={handleDeposit} disabled={!depositAmt}
-                      className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
-                      DEPOSIT TO VAULT
-                    </button>
-                  </>
-                ) : (
-                  <TxResult state={depositTx} sig={depositSig} error={depositErr} amount={successAmt}
-                    onClose={() => { setDepositTx('idle'); setDepositSig(''); setDepositErr(''); setSuccessAmt('') }} />
-                )
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>
