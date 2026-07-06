@@ -39,7 +39,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/uniben" className="inline-block text-center font-data text-xs tracking-widest py-4 px-8 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
-              VIEW UNIBEN TREASURY →
+              VIEW UNIBEN FACULTIES TREASURY →
             </Link>
             <Link href="/register" className="inline-block text-center font-data text-xs tracking-widest py-4 px-8 border border-rule text-ghost hover:border-ghost hover:text-body bg-paper/50 transition-all duration-150 active:scale-[0.98]">
               REGISTER YOUR FACULTY
