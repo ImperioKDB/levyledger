@@ -6,6 +6,7 @@ import { ADMIN_KEY } from '@/lib/constants'
 import LiveHero from '@/components/LiveHero'
 import RoleBadge from '@/components/RoleBadge'
 import ConnectWallet from '@/components/ConnectWallet'
+import WordRotator from '@/components/WordRotator'
 
 export default function Home() {
   const wallet = useWallet()
@@ -28,22 +29,26 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="px-6 pt-12 pb-10 border-b border-rule">
-        <p className="font-data text-uniben text-xs tracking-widest uppercase mb-8">
-          Not a bank statement. Not a spreadsheet. A public record.
-        </p>
-        <h1 className="font-display font-bold text-ledger leading-tight mb-8"
-          style={{ fontSize: 'clamp(2rem, 8vw, 3rem)' }}>
-          Every semester you pay levies.<br />
-          Faculty dues. Union dues.<br />
-          <span className="text-ghost">Where does it go?</span>
-        </h1>
-        <p className="text-body text-base leading-relaxed max-w-sm mb-6">
-          Faculty student union executives in Nigerian universities collect
-          millions of naira every year with zero public accountability.
-          No receipts. No audit. No records. The money disappears between excos.
-        </p>
-        <p className="font-display font-bold text-ledger text-xl leading-snug">
+      <section className="relative px-6 pt-12 pb-10 border-b border-rule overflow-hidden">
+        <div className="absolute inset-0 ledger-grid-bg pointer-events-none" />
+        <div className="relative">
+          <p className="font-data text-uniben text-xs tracking-widest uppercase mb-8">
+            Not a bank statement. Not a spreadsheet. A public record.
+          </p>
+          <h1 className="font-display font-bold text-ledger leading-tight mb-8"
+            style={{ fontSize: 'clamp(2rem, 8vw, 3rem)' }}>
+            Every semester you pay levies.<br />
+            <WordRotator /><br />
+            <span className="text-ghost">Where does it go?</span>
+          </h1>
+          <p className="text-body text-base leading-relaxed max-w-sm mb-6">
+            Faculty student union executives in Nigerian universities collect
+            millions of naira every year with zero public accountability.
+            No receipts. No audit. No records. The money disappears between excos.
+          </p>
+        </div>
+
+        <p className="relative font-display font-bold text-ledger text-xl leading-snug">
           LevyLedger makes that structurally impossible.
         </p>
       </section>
