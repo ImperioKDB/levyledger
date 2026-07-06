@@ -143,6 +143,27 @@ body {
   animation: progress-indeterminate 1.1s ease-in-out infinite;
 }
 
+@keyframes word-fade {
+  0%   { opacity: 0; transform: translateY(6px); }
+  12%  { opacity: 1; transform: translateY(0); }
+  88%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+.animate-word-fade {
+  animation: word-fade 2200ms ease both;
+}
+
+/* Flat ledger-grid texture for the homepage hero -- a repeating line
+   pattern, not a decorative color gradient or glass blur. Reinforces the
+   "public record, not a spreadsheet" idea rather than fighting it. */
+.ledger-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.35;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
