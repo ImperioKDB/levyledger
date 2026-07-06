@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { submitDepartmentRequest, generateFacultySlug, UNIBEN_UNIVERSITY_NAME } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
+import ConnectWallet from '@/components/ConnectWallet'
 
 export default function RegisterPage() {
   const wallet = useWallet()
@@ -36,7 +36,7 @@ export default function RegisterPage() {
           ? "This wallet isn't a LevyLedger admin wallet. Connect the admin wallet to register a new faculty."
           : 'Connect the LevyLedger admin wallet to register a new faculty.'}
       </p>
-      <WalletMultiButton />
+      <ConnectWallet />
     </main>
   )
 
