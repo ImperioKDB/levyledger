@@ -76,10 +76,16 @@ body {
   background: transparent !important;
   border: 1px solid var(--rule) !important;
   color: var(--ledger) !important;
-  font-size: 12px !important;
-  padding: 8px 16px !important;
+  font-size: 11px !important;
+  padding: 6px 12px !important;
+  height: auto !important;
+  min-width: 0 !important;
+  line-height: 1.4 !important;
   letter-spacing: 0.05em !important;
   transition: border-color 150ms, color 150ms !important;
+}
+.wallet-adapter-button-start-icon {
+  display: none !important;
 }
 .wallet-adapter-button:hover {
   border-color: var(--uniben) !important;
@@ -107,15 +113,3 @@ body {
   }
 }
 
-/* Technical, sharp dot-matrix blueprint background */
-.bg-dot-matrix {
-  background-size: 24px 24px;
-  background-image: radial-gradient(circle, var(--rule) 1px, transparent 1px);
-}
-
-.bg-blueprint {
-  background-size: 48px 48px;
-  background-image: 
-    linear-gradient(to right, var(--rule) 0.5px, transparent 0.5px),
-    linear-gradient(to bottom, var(--rule) 0.5px, transparent 0.5px);
-}
