@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { PublicKey } from '@solana/web3.js'
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { BN } from '@coral-xyz/anchor'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import ConnectWallet from '@/components/ConnectWallet'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
 import { fetchTreasury } from '@/lib/queries'
@@ -226,7 +226,7 @@ export default function DepositPage() {
           <p className="text-body text-sm leading-relaxed">
             Connect any Solana wallet to pay your dues directly into this faculty's treasury.
           </p>
-          <WalletMultiButton />
+          <ConnectWallet />
         </div>
       ) : (
         <div className="space-y-4">
