@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
@@ -7,6 +7,7 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { BN } from '@coral-xyz/anchor'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { toPng } from 'html-to-image'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
 import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError, getLastTreasuryFetchStack, getBundledIdlAccountNames } from '@/lib/queries'
 import * as AnchorPkg from '@coral-xyz/anchor'
@@ -30,20 +31,41 @@ type TxState = 'idle' | 'loading' | 'success' | 'error'
 function TxResult({
   state, sig, error, amount, onClose,
 }: { state: TxState; sig: string; error: string; amount?: string; onClose?: () => void }) {
+  const receiptRef = useRef<HTMLDivElement>(null)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSaveImage() {
+    if (!receiptRef.current) return
+    setSaving(true)
+    try {
+      const dataUrl = await toPng(receiptRef.current, { backgroundColor: '#111111', pixelRatio: 2 })
+      const link = document.createElement('a')
+      link.download = `levyledger-receipt-${sig.slice(0, 8)}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (e) {
+      console.error('Failed to save receipt image', e)
+    }
+    setSaving(false)
+  }
+
   if (state === 'loading') return (
-    <div className="mt-6 border border-rule bg-paper p-5 animate-pulse flex flex-col items-center justify-center text-center">
-      <span className="font-data text-pending text-xs mb-2">● PROCESSING TRANSACTION</span>
+    <div className="mt-6 border border-rule bg-paper p-5 flex flex-col items-center justify-center text-center">
+      <span className="font-data text-pending text-xs mb-3">● PROCESSING TRANSACTION</span>
+      <div className="w-full h-1 bg-rule overflow-hidden mb-3">
+        <div className="h-full w-1/3 bg-pending progress-indeterminate" />
+      </div>
       <p className="text-body text-xs">Waiting for block confirmation on Solana Devnet...</p>
     </div>
   )
   if (state === 'success') return (
-    <div className="mt-6 border border-nigerian bg-paper p-5 flex flex-col justify-between">
-      <div>
+    <div className="mt-6">
+      <div ref={receiptRef} className="border border-nigerian bg-paper p-5">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-rule">
           <span className="font-data text-nigerian text-xs tracking-widest uppercase">TRANSACTION RECEIPT</span>
           <span className="font-data text-ghost text-[10px]">SUCCESS</span>
         </div>
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3">
           {amount && (
             <div>
               <p className="font-data text-ghost text-[10px] uppercase">Amount</p>
@@ -58,11 +80,15 @@ function TxResult({
           </div>
         </div>
       </div>
-      <div className="flex gap-3">
+      <div className="flex gap-3 mt-3">
         <a href={`${EXPLORER}/${sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
           className="flex-1 text-center font-data text-xs py-3 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
           EXPLORER LINK ↗
         </a>
+        <button onClick={handleSaveImage} disabled={saving}
+          className="flex-1 font-data text-xs py-3 border border-rule text-ghost hover:border-ledger transition-colors disabled:opacity-50">
+          {saving ? 'SAVING...' : 'SAVE IMAGE'}
+        </button>
         {onClose && (
           <button onClick={onClose} className="flex-1 font-data text-xs py-3 border border-rule text-ghost hover:border-ledger transition-colors">
             DISMISS
@@ -506,8 +532,9 @@ function AdminContent() {
               <p className="font-data text-ghost text-xs">{wallet.publicKey.toString().slice(0, 8)}...{wallet.publicKey.toString().slice(-6)}</p>
             </div>
             <div className="text-right">
-              <p className="font-data text-ghost text-xs mb-1">Vault</p>
+              <p className="font-data text-ghost text-xs mb-1">Available</p>
               <p className="font-data text-uniben text-sm font-bold">${formatUSDC(treasury.availableBalance)}</p>
+              <p className="font-data text-ghost text-[10px] mt-1">Reserved ${formatUSDC(treasury.reservedBalance)}</p>
             </div>
           </div>
 
@@ -568,6 +595,13 @@ function AdminContent() {
                   <div className="border-b border-rule pb-4">
                     <p className="font-data text-ghost text-xs mb-1">Available to spend</p>
                     <p className="font-data text-uniben text-2xl font-bold">${formatUSDC(treasury.availableBalance)} USDC</p>
+                  </div>
+                  <div className="border border-rule p-3 bg-paper/20">
+                    <p className="text-body text-xs leading-relaxed">
+                      Creating a proposal reserves this amount immediately — it moves from Available
+                      to Reserved, not out of the vault. Nothing is actually sent until 3 execs sign.
+                      Rejected or expired proposals return the full amount to Available.
+                    </p>
                   </div>
                   <div>
                     <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
