@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { fetchApprovedUnibenFaculties } from '@/lib/supabase'
 import { fetchTreasury } from '@/lib/queries'
 import { formatUSDC } from '@/lib/anchor'
+import { useCountUp } from '@/hooks/useCountUp'
 
 interface FacultyRow {
   slug: string
@@ -49,6 +50,7 @@ export default function LiveHero() {
   const liveRows       = rows.filter(r => r.live)
   const liveCount      = liveRows.length
   const totalBalance   = liveRows.reduce((sum, r) => sum + r.balance, 0)
+  const animatedBalance = useCountUp(totalBalance)
   const totalProposals = liveRows.reduce((sum, r) => sum + r.proposals, 0)
 
   // ── Loading ──────────────────────────────────────────────────────────────
@@ -102,7 +104,7 @@ export default function LiveHero() {
 
       <p className="font-data font-bold text-uniben leading-none mb-2"
         style={{ fontSize: 'clamp(3rem, 14vw, 5rem)' }}>
-        ${formatUSDC(totalBalance)}
+        ${formatUSDC(animatedBalance)}
       </p>
       <p className="font-data text-ghost text-sm mb-6">
         USDC · Across {liveCount} of {approvedCount} faculties
