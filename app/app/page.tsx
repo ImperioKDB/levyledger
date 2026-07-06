@@ -1,8 +1,21 @@
+'use client'
+
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { ADMIN_KEY } from '@/lib/constants'
 import LiveHero from '@/components/LiveHero'
 import TextScrambler from '@/components/TextScrambler'
 
+const WalletMultiButtonDynamic = dynamic(
+  () => import('@solana/wallet-adapter-react-ui').then((m) => m.WalletMultiButton),
+  { ssr: false }
+)
+
 export default function Home() {
+  const wallet = useWallet()
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+
   return (
     <main className="min-h-screen bg-ink bg-dot-matrix">
 
@@ -12,6 +25,11 @@ export default function Home() {
           <Link href="/universities" className="font-data text-ghost text-xs hover:text-uniben transition-colors tracking-wider">
             FACULTIES
           </Link>
+          {isAdminWallet && (
+            <Link href="/register" className="font-data text-uniben text-xs hover:text-ledger transition-colors tracking-wider">
+              MANAGE FACULTIES
+            </Link>
+          )}
           <span className="font-data text-ghost text-xs px-2 py-1 border border-rule bg-paper">
             DEVNET
           </span>
@@ -38,12 +56,12 @@ export default function Home() {
             LevyLedger makes that structurally impossible by securing every dues payment on Solana.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/uniben" className="inline-block text-center font-data text-xs tracking-widest py-4 px-8 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+            <Link href="/overview" className="inline-block text-center font-data text-xs tracking-widest py-4 px-8 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
               VIEW UNIBEN FACULTIES TREASURY →
             </Link>
-            <Link href="/register" className="inline-block text-center font-data text-xs tracking-widest py-4 px-8 border border-rule text-ghost hover:border-ghost hover:text-body bg-paper/50 transition-all duration-150 active:scale-[0.98]">
-              REGISTER YOUR FACULTY
-            </Link>
+            <div className="wallet-connect-hero">
+              <WalletMultiButtonDynamic />
+            </div>
           </div>
         </div>
       </section>
