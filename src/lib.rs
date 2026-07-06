@@ -49,7 +49,7 @@ pub mod levyledger {
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         require!(amount > 0, LevyError::AmountZero);
-        
+
         let cpi_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             anchor_spl::token::Transfer {
@@ -59,7 +59,7 @@ pub mod levyledger {
             },
         );
         anchor_spl::token::transfer(cpi_ctx, amount)?;
-        
+
         ctx.accounts.treasury.available_balance = ctx.accounts.treasury.available_balance
             .checked_add(amount).ok_or(LevyError::Overflow)?;
         ctx.accounts.treasury.total_deposited = ctx.accounts.treasury.total_deposited
@@ -160,6 +160,24 @@ pub mod levyledger {
             ctx.accounts.proposal.signatures_for += 1;
 
             if ctx.accounts.proposal.signatures_for >= threshold {
+                // Deferred validation: recipient_token_account is UncheckedAccount now,
+                // so we deserialize and check it manually, only here, only when a
+                // real transfer is about to happen. Rejecting a proposal never
+                // reaches this branch, so a recipient without an existing USDC ATA
+                // no longer blocks a reject vote.
+                let recipient_ata = Account::<TokenAccount>::try_from(
+                    &ctx.accounts.recipient_token_account.to_account_info()
+                ).map_err(|_| error!(LevyError::InvalidRecipient))?;
+
+                require!(
+                    recipient_ata.owner == ctx.accounts.proposal.recipient,
+                    LevyError::InvalidRecipient
+                );
+                require!(
+                    recipient_ata.mint == ctx.accounts.vault.mint,
+                    LevyError::InvalidMint
+                );
+
                 let treasury_slug = ctx.accounts.treasury.university_slug.clone();
                 let treasury_bump = ctx.accounts.treasury.bump;
                 let seeds = &[
@@ -330,12 +348,11 @@ pub struct SignProposal<'info> {
         bump = treasury.vault_bump
     )]
     pub vault: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        constraint = recipient_token_account.owner == proposal.recipient @ LevyError::InvalidRecipient,
-        constraint = recipient_token_account.mint == vault.mint @ LevyError::InvalidMint
-    )]
-    pub recipient_token_account: Account<'info, TokenAccount>,
+    /// CHECK: only deserialized and validated inside sign_proposal when a
+    /// proposal actually executes (approve branch, threshold reached).
+    /// On reject, this account is never read — it does not need to exist.
+    #[account(mut)]
+    pub recipient_token_account: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -396,7 +413,7 @@ pub struct ProposalAccount {
 }
 
 impl ProposalAccount {
-    // Discriminator (8) + Pubkeys (32 * 3) + Amount (8) + Category (1) 
+    // Discriminator (8) + Pubkeys (32 * 3) + Amount (8) + Category (1)
     // String (4 + 200) + Status (1) + Vote Masks (5 + 5) + Vote Counters (1 + 1)
     // Index (8) + Timestamps (8 * 2) + Bump (1) = 355 bytes. Space 380 leaves safe margin.
     pub const SPACE: usize = 380;
