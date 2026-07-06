@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
@@ -13,6 +14,7 @@ import EmptyState from '@/components/EmptyState'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopProposalsList from '@/components/DesktopProposalsList'
+import RoleBadge from '@/components/RoleBadge'
 
 type Filter = 'All' | 'Active' | 'Executed' | 'Rejected' | 'Expired'
 const FILTERS: Filter[] = ['All', 'Active', 'Executed', 'Rejected', 'Expired']
@@ -67,10 +69,14 @@ export default function FacultyProposalsPage() {
     <>
       <div className="xl:hidden">
         <main className="min-h-screen bg-ink pb-16">
-          <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
-            <Link href={`/${university}`} className="font-data text-ghost text-xs">
+          <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4 flex items-center justify-between gap-2">
+            <Link href={`/${university}`} className="font-data text-ghost text-xs shrink-0">
               ← {displayName.toUpperCase()}
             </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <RoleBadge connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
+              <WalletMultiButton />
+            </div>
           </header>
 
           <section className="px-6 pt-6 pb-4 border-b border-rule">
