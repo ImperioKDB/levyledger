@@ -1,4 +1,4 @@
-'use client'
+<'use client'
 
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -116,3 +116,4 @@ export default function Home() {
     </main>
   )
 }
+>
