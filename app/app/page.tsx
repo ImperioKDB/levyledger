@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { ADMIN_KEY } from '@/lib/constants'
 import LiveHero from '@/components/LiveHero'
 import RoleBadge from '@/components/RoleBadge'
+import ConnectWallet from '@/components/ConnectWallet'
 
 export default function Home() {
   const wallet = useWallet()
@@ -16,15 +16,15 @@ export default function Home() {
 
       <header className="border-b border-rule px-4 py-3 flex items-center justify-between gap-2">
         <span className="font-data text-ledger text-sm tracking-widest shrink-0">LEVYLEDGER</span>
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <Link href="/universities" className="font-data text-ghost text-xs hover:text-uniben transition-colors shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <Link href="/universities" className="font-data text-ghost text-[10px] hover:text-uniben transition-colors shrink-0">
             FACULTIES
           </Link>
           <RoleBadge connected={!!wallet.publicKey} isAdmin={isAdmin} isExec={false} />
-          <span className="font-data text-ghost text-xs px-2 py-1 border border-rule shrink-0">
+          <span className="font-data text-ghost text-[10px] px-1.5 py-1 border border-rule shrink-0">
             DEVNET
           </span>
-          <div className="shrink-0"><WalletMultiButton /></div>
+          <ConnectWallet />
         </div>
       </header>
 
