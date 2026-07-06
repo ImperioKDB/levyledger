@@ -1,5 +1,5 @@
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import RoleBadge from './RoleBadge'
+import ConnectWallet from './ConnectWallet'
 
 interface Props {
   universityName: string
@@ -15,7 +15,7 @@ export default function DesktopTopBar({ universityName, connected = false, isAdm
       <div className="flex items-center gap-2">
         <RoleBadge connected={connected} isAdmin={isAdmin} isExec={isExec} />
         <span className="font-data text-ghost text-xs px-2 py-1 border border-rule">DEVNET</span>
-        <WalletMultiButton />
+        <ConnectWallet />
       </div>
     </header>
   )
