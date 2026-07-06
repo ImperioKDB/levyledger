@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import MobileHeader from '@/components/MobileHeader'
-import BottomNav from '@/components/BottomNav'
 
 const STEPS = [
   { title: 'Exco collects levies', body: 'Students pay their dues as usual. Nothing changes for them.' },
@@ -12,7 +11,7 @@ const STEPS = [
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-ink pb-24 pt-16">
+    <main className="min-h-screen bg-ink pb-12 pt-16">
       <MobileHeader />
       <section className="px-4 py-8 md:px-16 md:py-16 max-w-3xl md:mx-auto border-b border-rule">
         <h1 className="font-display font-bold text-ledger text-2xl md:text-4xl mb-4">About LevyLedger</h1>
@@ -34,11 +33,10 @@ export default function AboutPage() {
         </div>
       </section>
       <section className="px-4 py-8 md:px-16 max-w-3xl md:mx-auto">
-        <Link href="/uniben" className="block w-full text-center font-data text-xs tracking-widest py-4 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
-          VIEW UNIBEN TREASURY →
+        <Link href="/universities" className="block w-full text-center font-data text-xs tracking-widest py-4 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
+          VIEW ALL FACULTIES →
         </Link>
       </section>
-      <BottomNav />
     </main>
   )
 }
