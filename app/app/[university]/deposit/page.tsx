@@ -1,11 +1,12 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { PublicKey } from '@solana/web3.js'
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { BN } from '@coral-xyz/anchor'
+import { toPng } from 'html-to-image'
 import ConnectWallet from '@/components/ConnectWallet'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
@@ -26,31 +27,58 @@ type TxState = 'idle' | 'loading' | 'success' | 'error'
 function TxResult({ state, sig, error, amount, onClose }: {
   state: TxState; sig: string; error: string; amount?: string; onClose?: () => void
 }) {
+  const receiptRef = useRef<HTMLDivElement>(null)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSaveImage() {
+    if (!receiptRef.current) return
+    setSaving(true)
+    try {
+      const dataUrl = await toPng(receiptRef.current, { backgroundColor: '#111111', pixelRatio: 2 })
+      const link = document.createElement('a')
+      link.download = `levyledger-receipt-${sig.slice(0, 8)}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (e) {
+      console.error('Failed to save receipt image', e)
+    }
+    setSaving(false)
+  }
+
   if (state === 'loading') return (
-    <div className="border border-rule bg-paper p-5 animate-pulse flex flex-col items-center justify-center text-center">
-      <span className="font-data text-pending text-xs mb-2">● PROCESSING TRANSACTION</span>
+    <div className="border border-rule bg-paper p-5 flex flex-col items-center justify-center text-center">
+      <span className="font-data text-pending text-xs mb-3">● PROCESSING TRANSACTION</span>
+      <div className="w-full h-1 bg-rule overflow-hidden mb-3">
+        <div className="h-full w-1/3 bg-pending progress-indeterminate" />
+      </div>
       <p className="text-body text-xs">Waiting for block confirmation on Solana Devnet...</p>
     </div>
   )
   if (state === 'success') return (
-    <div className="border border-nigerian bg-paper p-5">
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-rule">
-        <span className="font-data text-nigerian text-xs tracking-widest uppercase">RECEIPT</span>
-        <span className="font-data text-ghost text-[10px]">SUCCESS</span>
-      </div>
-      {amount && (
-        <div className="mb-4">
-          <p className="font-data text-ghost text-[10px] uppercase">Amount</p>
-          <p className="font-data text-ledger text-lg font-bold">${amount} USDC</p>
+    <div>
+      <div ref={receiptRef} className="border border-nigerian bg-paper p-5">
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-rule">
+          <span className="font-data text-nigerian text-xs tracking-widest uppercase">RECEIPT</span>
+          <span className="font-data text-ghost text-[10px]">SUCCESS</span>
         </div>
-      )}
-      <p className="font-data text-ghost text-[10px] uppercase mb-1">On-Chain Proof</p>
-      <p className="font-data text-body text-xs break-all bg-lifted p-2 border border-rule mb-4">{sig}</p>
-      <div className="flex gap-3">
+        {amount && (
+          <div className="mb-4">
+            <p className="font-data text-ghost text-[10px] uppercase">Amount</p>
+            <p className="font-data text-ledger text-lg font-bold">${amount} USDC</p>
+          </div>
+        )}
+        <p className="font-data text-ghost text-[10px] uppercase mb-1">On-Chain Proof</p>
+        <p className="font-data text-body text-xs break-all bg-lifted p-2 border border-rule">{sig}</p>
+      </div>
+      <div className="flex gap-3 mt-3">
         <a href={`${EXPLORER}/${sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer"
           className="flex-1 text-center font-data text-xs py-3 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
           EXPLORER LINK ↗
         </a>
+        <button onClick={handleSaveImage} disabled={saving}
+          className="flex-1 font-data text-xs py-3 border border-rule text-ghost hover:border-ledger transition-colors disabled:opacity-50">
+          {saving ? 'SAVING...' : 'SAVE IMAGE'}
+        </button>
         {onClose && (
           <button onClick={onClose} className="flex-1 font-data text-xs py-3 border border-rule text-ghost hover:border-ledger transition-colors">
             DISMISS
@@ -231,7 +259,7 @@ export default function DepositPage() {
       ) : (
         <div className="space-y-4">
           <div className="border-b border-rule pb-4">
-            <p className="font-data text-ghost text-xs mb-1">Current vault balance</p>
+            <p className="font-data text-ghost text-xs mb-1">Available Balance</p>
             <p className="font-data text-uniben text-2xl font-bold">${formatUSDC(treasury.availableBalance)} USDC</p>
           </div>
 
