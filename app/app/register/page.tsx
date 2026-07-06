@@ -2,9 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { submitDepartmentRequest, generateFacultySlug, UNIBEN_UNIVERSITY_NAME } from '@/lib/supabase'
+import { ADMIN_KEY } from '@/lib/constants'
 
 export default function RegisterPage() {
+  const wallet = useWallet()
+  const isAdminWallet = wallet.publicKey?.toString() === ADMIN_KEY
+
   const [department, setDepartment]             = useState('')
   const [execs, setExecs]                       = useState<string[]>(['', '', '', '', ''])
   const [submitterName, setSubmitterName]       = useState('')
@@ -13,6 +19,26 @@ export default function RegisterPage() {
   const [error, setError]   = useState('')
 
   const slug = department ? generateFacultySlug(department) : ''
+
+  if (!isAdminWallet) return (
+    <main className="min-h-screen bg-ink px-6 pt-16">
+      <header className="pb-6 border-b border-rule mb-8">
+        <Link href="/" className="font-data text-ghost text-xs">← LEVYLEDGER</Link>
+      </header>
+      <p className="font-data text-void text-xs tracking-widest uppercase mb-3">
+        Admin Only
+      </p>
+      <h1 className="font-display text-xl font-bold text-ledger mb-3">
+        Faculty registration is restricted
+      </h1>
+      <p className="text-body text-sm leading-relaxed max-w-xs mb-8">
+        {wallet.publicKey
+          ? "This wallet isn't a LevyLedger admin wallet. Connect the admin wallet to register a new faculty."
+          : 'Connect the LevyLedger admin wallet to register a new faculty.'}
+      </p>
+      <WalletMultiButton />
+    </main>
+  )
 
   async function handleSubmit() {
     setStatus('loading'); setError('')
@@ -70,10 +96,9 @@ export default function RegisterPage() {
           Bring transparency to your union
         </h1>
         <p className="text-body text-sm leading-relaxed mb-8">
-          Any student can submit this form. A LevyLedger admin reviews and
-          initializes your faculty's on-chain treasury. This form itself
-          is not on-chain — the treasury and every naira in it will be,
-          once approved.
+          Collect the exec's 5 wallet addresses directly, then submit here.
+          This form itself is not on-chain — the treasury and every naira in
+          it will be, once you submit and initialize it.
         </p>
 
         <div className="space-y-5">
