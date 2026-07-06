@@ -4,7 +4,8 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import RoleBadge from '@/components/RoleBadge'
+import ConnectWallet from '@/components/ConnectWallet'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
@@ -16,7 +17,6 @@ import BottomNav from '@/components/BottomNav'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopTreasuryOverview from '@/components/DesktopTreasuryOverview'
-import RoleBadge from '@/components/RoleBadge'
 
 export default function TreasuryPage() {
   const { university } = useParams() as { university: string }
@@ -122,7 +122,7 @@ export default function TreasuryPage() {
                   ← LEVYLEDGER
                 </Link>
                 <RoleBadge connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
-                <div className="shrink-0"><WalletMultiButton /></div>
+                <ConnectWallet />
               </div>
               <div className={`transition-opacity duration-200 ${
                 scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
