@@ -19,7 +19,7 @@ export default function DesktopTreasuryOverview({
 
   return (
     <div className="flex-1 overflow-y-auto p-8">
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-8 stagger">
         <MetricCard label="Available Balance" value={"$" + formatUSDC(treasury.availableBalance)} highlight />
         <MetricCard label="Reserved Balance"  value={"$" + formatUSDC(treasury.reservedBalance)} />
         <MetricCard label="Total Deposited"   value={"$" + formatUSDC(treasury.totalDeposited)} />
@@ -27,6 +27,7 @@ export default function DesktopTreasuryOverview({
         <MetricCard label="Active Proposals"  value={treasury.activeProposalCount?.toString?.() ?? String(treasury.activeProposalCount)} />
         <MetricCard label="Total Proposals"   value={treasury.proposalCount?.toString?.() ?? String(treasury.proposalCount)} />
       </div>
+
       <div className="max-w-2xl">
         <div className="flex items-center justify-between mb-4">
           <p className="font-data text-ghost text-xs tracking-widest uppercase">Recent Proposals</p>
@@ -37,9 +38,17 @@ export default function DesktopTreasuryOverview({
         {proposals.length === 0 ? (
           <p className="font-data text-ghost text-sm">No proposals yet.</p>
         ) : (
-          proposals.map((p: any) => (
-            <ProposalCard key={p.index} proposal={p} university={university} signers={treasury.signers} />
-          ))
+          <div className="stagger">
+            {proposals.map((p: any) => (
+              <ProposalCard
+                key={p.index}
+                proposal={p}
+                university={university}
+                signers={treasury.signers}
+                threshold={treasury.threshold}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
