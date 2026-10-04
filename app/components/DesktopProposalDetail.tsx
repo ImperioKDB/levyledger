@@ -6,7 +6,7 @@ import { CATEGORY_LABELS } from '@/lib/constants'
 
 function fmtTimestamp(ts: any): string {
   const s = typeof ts?.toNumber === 'function' ? ts.toNumber() : Number(ts)
-  if (isNaN(s)) return '—'
+  if (isNaN(s)) return '-'
   return new Date(s * 1000).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
@@ -23,6 +23,7 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
   if (loading) {
     return <div className="p-8 font-data text-ghost text-xs">Loading proposal...</div>
   }
+
   if (!proposal) {
     return (
       <div className="p-8">
@@ -34,6 +35,7 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
 
   const status = Object.keys(proposal.status)[0]
   const category = Object.keys(proposal.category)[0]
+  const threshold = treasury?.threshold || 3
 
   return (
     <div className="p-8 max-w-5xl">
@@ -42,7 +44,7 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
           <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-2">
             Proposal #{id} · {CATEGORY_LABELS[category] || category}
           </p>
-          <h1 className="font-display font-bold text-ledger text-3xl mb-2">{proposal.description}</h1>
+          <h1 className="font-display font-bold text-ledger text-3xl tracking-tight mb-2">{proposal.description}</h1>
         </div>
         <StatusBadge status={status} />
       </div>
@@ -64,9 +66,9 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
 
       <div className="mb-10">
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">
-          Signatures ({proposal.signaturesFor} / 5)
+          Signatures ({proposal.signaturesFor} / {threshold})
         </p>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-5 gap-3 stagger">
           {treasury?.signers?.map((signer: any, i: number) => {
             const votedFor = proposal.signedBy?.[i]
             const votedAgainst = proposal.votedAgainst?.[i]
@@ -80,7 +82,7 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
                 }
               >
                 <span className={
-                  'w-9 h-9 flex items-center justify-center border rounded-full ' +
+                  'w-9 h-9 flex items-center justify-center border ' +
                   (votedFor ? 'border-nigerian text-nigerian' : votedAgainst ? 'border-void text-void' : 'border-rule text-ghost')
                 }>
                   {votedFor ? '✓' : votedAgainst ? '✗' : '○'}
@@ -117,19 +119,19 @@ export default function DesktopProposalDetail({ id, proposal, treasury, loading 
           {status === 'executed' && (
             <div className="relative pb-6">
               <span className="absolute -left-[25px] w-3 h-3 bg-nigerian border border-ink" />
-              <p className="font-data text-nigerian text-xs">Executed — Funds Transferred</p>
+              <p className="font-data text-nigerian text-xs">Executed. Funds transferred.</p>
             </div>
           )}
           {status === 'rejected' && (
             <div className="relative pb-6">
               <span className="absolute -left-[25px] w-3 h-3 bg-void border border-ink" />
-              <p className="font-data text-void text-xs">Rejected — Funds Returned</p>
+              <p className="font-data text-void text-xs">Rejected. Funds returned.</p>
             </div>
           )}
           {status === 'expired' && (
             <div className="relative pb-6">
               <span className="absolute -left-[25px] w-3 h-3 bg-ghost border border-ink" />
-              <p className="font-data text-ghost text-xs">Expired — Funds Returned</p>
+              <p className="font-data text-ghost text-xs">Expired. Funds returned.</p>
             </div>
           )}
         </div>
