@@ -1,4 +1,5 @@
 'use client'
+
 import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -16,6 +17,7 @@ import { DEVNET_USDC_MINT, CATEGORY_LABELS, ADMIN_KEY } from '@/lib/constants'
 import { parseAnchorError } from '@/lib/errors'
 import {
   fetchPendingRequests,
+  fetchFacultyBySlug,
   DepartmentRequest,
 } from '@/lib/supabase'
 import DesktopSidebar from '@/components/DesktopSidebar'
@@ -58,6 +60,7 @@ function TxResult({
       <p className="text-body text-xs">Waiting for block confirmation on Solana Devnet...</p>
     </div>
   )
+
   if (state === 'success') return (
     <div className="mt-6">
       <div ref={receiptRef} className="border border-nigerian bg-paper p-5">
@@ -97,12 +100,14 @@ function TxResult({
       </div>
     </div>
   )
+
   if (state === 'error') return (
     <div className="mt-6 border border-void bg-paper p-5">
       <p className="font-data text-void text-xs tracking-widest uppercase mb-1">TRANSACTION FAILED</p>
       <p className="font-data text-void text-xs break-all bg-lifted p-2 border border-rule leading-relaxed">{error}</p>
     </div>
   )
+
   return null
 }
 
@@ -110,6 +115,7 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
   const phantomUrl =
     `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}` +
     `?ref=${encodeURIComponent('https://levyledger.vercel.app')}`
+
   return (
     <div className="space-y-6">
       <div className="border border-uniben p-6">
@@ -120,7 +126,7 @@ function MobileWalletGate({ currentUrl }: { currentUrl: string }) {
           Tap below to open this page inside Phantom's built-in browser.
         </p>
         <a href={phantomUrl}
-          className="block w-full text-center font-data text-sm tracking-widest py-4 bg-uniben text-ink hover:opacity-90 transition-opacity">
+          className="block w-full text-center font-data text-sm tracking-widest py-4 bg-uniben text-ink hover:opacity-90 active:scale-[0.98] transition-all">
           OPEN IN PHANTOM →
         </a>
       </div>
@@ -156,6 +162,8 @@ function AdminContent() {
 
   const [needsPhantomGuide, setNeedsPhantomGuide] = useState(false)
   const [currentUrl,  setCurrentUrl]  = useState('')
+  const [facultyName, setFacultyName] = useState<string | null>(null)
+
   const [treasury,    setTreasury]    = useState<any>(null)
   const [proposals,   setProposals]   = useState<any[]>([])
   const [loading,     setLoading]     = useState(true)
@@ -222,6 +230,11 @@ function AdminContent() {
 
   useEffect(() => { loadTreasury() }, [uniSlug])
   useEffect(() => { loadRequests() }, [isAdminWallet])
+  useEffect(() => {
+    fetchFacultyBySlug(uniSlug)
+      .then(r => setFacultyName(r?.department ?? null))
+      .catch(() => setFacultyName(null))
+  }, [uniSlug])
 
   const execIndex = treasury
     ? treasury.signers.findIndex((s: any) => s.toString() === wallet.publicKey?.toString())
@@ -268,7 +281,6 @@ function AdminContent() {
       const messageBytes = new TextEncoder().encode(messageStr)
       const signatureBytes = await wallet.signMessage(messageBytes)
       const signatureHex = Buffer.from(signatureBytes).toString('hex')
-
       const r = await fetch('/api/requests/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -282,7 +294,6 @@ function AdminContent() {
       })
       const res = await r.json()
       if (!r.ok) throw new Error(res.error || 'Failed to update request.')
-
       setReviewTx(prev => ({ ...prev, [req.id]: 'success' }))
       await loadRequests()
     } catch (e: any) {
@@ -373,7 +384,7 @@ function AdminContent() {
   const innerContent = (
     <div className="max-w-3xl mx-auto">
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">Exec Panel</p>
-      <h1 className="font-display text-2xl font-bold text-ledger mb-6">{uniSlug.toUpperCase()} Admin</h1>
+      <h1 className="font-display text-2xl font-bold text-ledger tracking-tight mb-6">{(facultyName || uniSlug).toUpperCase()} Admin</h1>
 
       <div className="border border-pending bg-paper px-4 py-3 mb-6 flex gap-3 items-start">
         <span className="font-data text-pending text-xs mt-0.5">!</span>
@@ -381,7 +392,7 @@ function AdminContent() {
           <p className="font-data text-pending text-xs tracking-widest uppercase mb-1">Devnet Notice</p>
           <p className="text-body text-xs leading-relaxed">
             Phantom may show a <span className="font-data text-ledger">"Failed to simulate"</span> warning
-            on devnet. This is expected — not an error. Tap{' '}
+            on devnet. This is expected, not an error. Tap{' '}
             <span className="font-data text-ledger">Yes, confirm (unsafe)</span> to proceed.
             All funds here are test tokens with no real value.
           </p>
@@ -429,15 +440,15 @@ function AdminContent() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => { setInitSlug(req.slug); setInitSigners([req.exec_1, req.exec_2, req.exec_3, req.exec_4, req.exec_5]) }}
-                      className="flex-1 py-2 font-data text-xs border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors"
+                      className="flex-1 py-2.5 font-data text-xs border border-uniben text-uniben hover:bg-uniben hover:text-ink active:scale-[0.98] transition-all"
                     >LOAD INTO INIT FORM</button>
                     <button
                       onClick={() => handleMarkApproved(req)} disabled={rTx === 'loading'}
-                      className="flex-1 py-2 font-data text-xs border border-nigerian text-nigerian hover:bg-nigerian hover:text-ink transition-colors disabled:opacity-40"
+                      className="flex-1 py-2.5 font-data text-xs border border-nigerian text-nigerian hover:bg-nigerian hover:text-ink active:scale-[0.98] transition-all disabled:opacity-40"
                     >MARK APPROVED</button>
                     <button
                       onClick={() => handleReject(req)} disabled={rTx === 'loading'}
-                      className="flex-1 py-2 font-data text-xs border border-void text-void hover:bg-void hover:text-ink transition-colors disabled:opacity-40"
+                      className="flex-1 py-2.5 font-data text-xs border border-void text-void hover:bg-void hover:text-ink active:scale-[0.98] transition-all disabled:opacity-40"
                     >REJECT</button>
                   </div>
                   {reviewErr[req.id] && <p className="font-data text-void text-xs mt-2">{reviewErr[req.id]}</p>}
@@ -476,6 +487,7 @@ function AdminContent() {
               </p>
             </div>
           </div>
+
           {!program && wallet.publicKey && (
             <div className="border border-pending p-3 space-y-2">
               <p className="font-data text-pending text-xs tracking-widest uppercase">Program Loading</p>
@@ -486,6 +498,7 @@ function AdminContent() {
               )}
             </div>
           )}
+
           <div className="space-y-3">
             <div>
               <label className="font-data text-ghost text-xs block mb-1">Treasury Slug</label>
@@ -502,10 +515,11 @@ function AdminContent() {
             ))}
             <button onClick={handleInit}
               disabled={initTx === 'loading' || !initSlug.trim() || initSigners.some(s => !s.trim()) || !wallet.publicKey}
-              className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity mt-2">
+              className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 active:scale-[0.98] transition-all mt-2">
               {initTx === 'loading' ? 'INITIALIZING...' : 'INITIALIZE TREASURY'}
             </button>
           </div>
+
           <TxResult state={initTx} sig={initSig} error={initErr} />
         </div>
       )}
@@ -518,7 +532,7 @@ function AdminContent() {
             This page is for signing and proposing spending only.
           </p>
           <Link href={`/${uniSlug}/deposit`}
-            className="inline-block font-data text-xs tracking-widest py-3 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
+            className="inline-block font-data text-xs tracking-widest py-3 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink active:scale-[0.98] transition-all">
             GO TO DEPOSIT →
           </Link>
         </div>
@@ -569,11 +583,11 @@ function AdminContent() {
                       {txState === 'idle' ? (
                         <div className="flex gap-3">
                           <button onClick={() => handleSign(p, true)} disabled={signTx[p.index] === 'loading'}
-                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${confirm === aKey ? 'bg-nigerian text-ink border-nigerian' : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'}`}>
+                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 active:scale-[0.98] ${confirm === aKey ? 'bg-nigerian text-ink border-nigerian' : 'border-nigerian text-nigerian hover:bg-nigerian hover:text-ink'}`}>
                             {confirm === aKey ? 'CONFIRM APPROVE' : 'APPROVE'}
                           </button>
                           <button onClick={() => handleSign(p, false)} disabled={signTx[p.index] === 'loading'}
-                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 ${confirm === rKey ? 'bg-void text-ink border-void' : 'border-void text-void hover:bg-void hover:text-ink'}`}>
+                            className={`flex-1 py-4 font-data text-xs tracking-widest border transition-colors disabled:opacity-40 active:scale-[0.98] ${confirm === rKey ? 'bg-void text-ink border-void' : 'border-void text-void hover:bg-void hover:text-ink'}`}>
                             {confirm === rKey ? 'CONFIRM REJECT' : 'REJECT'}
                           </button>
                         </div>
@@ -598,14 +612,14 @@ function AdminContent() {
                   </div>
                   <div className="border border-rule p-3 bg-paper/20">
                     <p className="text-body text-xs leading-relaxed">
-                      Creating a proposal reserves this amount immediately — it moves from Available
+                      Creating a proposal reserves this amount immediately. It moves from Available
                       to Reserved, not out of the vault. Nothing is actually sent until 3 execs sign.
                       Rejected or expired proposals return the full amount to Available.
                     </p>
                   </div>
                   <div>
                     <label className="font-data text-ghost text-xs block mb-1">Amount (USDC)</label>
-                    <input type="number" value={propAmt} onChange={e => setPropAmt(e.target.value)} placeholder="0.00"
+                    <input type="number" min="0.01" step="0.01" value={propAmt} onChange={e => setPropAmt(e.target.value)} placeholder="0.00"
                       className="w-full bg-paper border border-rule text-ledger font-data text-lg px-3 py-3 focus:border-uniben outline-none placeholder:text-ghost" />
                   </div>
                   <div>
@@ -626,7 +640,7 @@ function AdminContent() {
                       className="w-full bg-paper border border-rule text-ledger text-sm px-3 py-3 focus:border-uniben outline-none resize-none placeholder:text-ghost" />
                   </div>
                   <button onClick={handlePropose} disabled={!propAmt || !propRecip || !propDesc}
-                    className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 transition-opacity">
+                    className="w-full bg-uniben text-ink font-data text-xs py-4 tracking-widest hover:opacity-90 disabled:opacity-40 active:scale-[0.98] transition-all">
                     CREATE PROPOSAL
                   </button>
                 </>
@@ -636,7 +650,6 @@ function AdminContent() {
               )}
             </div>
           )}
-
         </div>
       )}
     </div>
@@ -645,19 +658,20 @@ function AdminContent() {
   return (
     <>
       {!isDesktop && (
-        <main className="min-h-screen bg-ink">
+        <main id="main-content" className="min-h-[100dvh] bg-ink">
           <header className="border-b border-rule px-6 py-4 flex items-center justify-between">
-            <Link href={`/${uniSlug}`} className="font-data text-ghost text-xs">← {uniSlug.toUpperCase()}</Link>
+            <Link href={`/${uniSlug}`} className="font-data text-ghost text-xs hover:text-uniben transition-colors">← {uniSlug.toUpperCase()}</Link>
             {!needsPhantomGuide && <WalletMultiButton />}
           </header>
           <div className="px-6 pt-8 pb-28">{innerContent}</div>
         </main>
       )}
+
       {isDesktop && (
-        <div className="flex min-h-screen bg-ink">
+        <div className="flex min-h-[100dvh] bg-ink">
           <DesktopSidebar university={uniSlug} isAuthorized={isAdminWallet || isExec} />
           <div className="flex-1 flex flex-col">
-            <DesktopTopBar universityName={uniSlug.toUpperCase() + " ADMIN"} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={isExec} />
+            <DesktopTopBar universityName={facultyName || uniSlug.toUpperCase()} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={isExec} />
             <div className="p-8 max-w-4xl w-full mx-auto overflow-y-auto">{innerContent}</div>
           </div>
         </div>
@@ -668,10 +682,8 @@ function AdminContent() {
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-ink" />}>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-ink" />}>
       <AdminContent />
     </Suspense>
   )
 }
-
-
