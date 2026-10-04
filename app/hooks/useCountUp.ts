@@ -3,15 +3,18 @@
 import { useEffect, useRef, useState } from 'react'
 
 // Animates a numeric value from its previous target to a new one whenever
-// it changes. Used for the homepage aggregate balance so it counts up
-// instead of just snapping to a new number on each refresh.
+// it changes. Honors prefers-reduced-motion by snapping instead of animating.
 export function useCountUp(target: number, durationMs = 900) {
   const [value, setValue] = useState(target)
   const prevTarget = useRef(target)
   const firstRun = useRef(true)
+  const reduceMotion = useRef(false)
 
   useEffect(() => {
-    // Don't animate the very first paint -- only animate real changes.
+    reduceMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }, [])
+
+  useEffect(() => {
     if (firstRun.current) {
       firstRun.current = false
       prevTarget.current = target
@@ -22,6 +25,12 @@ export function useCountUp(target: number, durationMs = 900) {
     const from = prevTarget.current
     const to = target
     if (from === to) return
+
+    if (reduceMotion.current) {
+      prevTarget.current = to
+      setValue(to)
+      return
+    }
 
     const start = performance.now()
     let raf: number
@@ -37,6 +46,7 @@ export function useCountUp(target: number, durationMs = 900) {
         setValue(to)
       }
     }
+
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [target, durationMs])
