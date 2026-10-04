@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Space_Grotesk, DM_Sans, Space_Mono } from 'next/font/google'
 import { WalletContextProvider } from '@/components/WalletContextProvider'
 import './globals.css'
@@ -25,13 +25,28 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://levyledger.vercel.app'),
   title: {
     default:  'LevyLedger',
-    template: '%s — LevyLedger',
+    template: '%s - LevyLedger',
   },
   description:
     'On-chain treasury transparency for Nigerian student unions. ' +
     'Every levy. Every vote. On-chain.',
+  openGraph: {
+    title: 'LevyLedger',
+    description:
+      'On-chain treasury transparency for Nigerian student unions. Every levy. Every vote. On-chain.',
+    siteName: 'LevyLedger',
+    type: 'website',
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0D0D0D',
 }
 
 export default function RootLayout({
@@ -49,6 +64,7 @@ export default function RootLayout({
       ].join(' ')}
     >
       <body>
+        <a href="#main-content" className="skip-link">Skip to content</a>
         <WalletContextProvider>
           <div className="page-enter">
             {children}
