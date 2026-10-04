@@ -15,8 +15,16 @@ interface Props {
 
 export default function DesktopMembersList({ members, loading, treasury }: Props) {
   if (loading) {
-    return <div className="p-8 font-data text-ghost text-xs">Loading members...</div>
+    return (
+      <div className="p-8 max-w-5xl space-y-4">
+        <div className="h-8 bg-paper w-48 animate-pulse" />
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => <div key={i} className="h-40 bg-paper animate-pulse" />)}
+        </div>
+      </div>
+    )
   }
+
   if (!treasury) {
     return (
       <div className="p-8">
@@ -28,12 +36,12 @@ export default function DesktopMembersList({ members, loading, treasury }: Props
 
   return (
     <div className="p-8 max-w-5xl">
-      <h1 className="font-display font-bold text-ledger text-3xl mb-1">Members</h1>
+      <h1 className="font-display font-bold text-ledger text-3xl tracking-tight mb-1">Members</h1>
       <p className="text-body text-sm mb-8">
-        The 5 registered exec signers for this treasury. {treasury.threshold} of 5 must approve every proposal.
+        The 5 registered exec signers for this treasury. {treasury.threshold} of 5 must approve every
+        proposal. Names come from the public profile directory when an exec registered one.
       </p>
-
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 stagger">
         {members.map((m, i) => (
           <div key={i} className="border border-rule bg-paper p-5">
             <p className="font-display font-semibold text-ledger text-base mb-2">{m.title}</p>
