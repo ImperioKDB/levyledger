@@ -23,7 +23,6 @@ export default function LiveHero() {
   async function load() {
     const requests = await fetchApprovedUnibenFaculties()
     setApprovedCount(requests.length)
-
     const results = await Promise.all(
       requests.map(async (req) => {
         const t = await fetchTreasury(req.slug)
@@ -35,7 +34,6 @@ export default function LiveHero() {
         return { slug: req.slug, department: req.department, balance, proposals, live: true }
       })
     )
-
     results.sort((a, b) => (b.live ? b.balance : -1) - (a.live ? a.balance : -1))
     setRows(results)
     setLoading(false)
@@ -53,7 +51,7 @@ export default function LiveHero() {
   const animatedBalance = useCountUp(totalBalance)
   const totalProposals = liveRows.reduce((sum, r) => sum + r.proposals, 0)
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // Loading
   if (loading) return (
     <div className="space-y-4 animate-pulse">
       <div className="h-3 bg-paper w-32" />
@@ -62,7 +60,7 @@ export default function LiveHero() {
     </div>
   )
 
-  // ── No faculties live yet — designed, not an error ───────────────────────
+  // No faculties live yet. Designed, not an error.
   if (liveCount === 0) return (
     <div>
       <div className="flex items-center justify-between mb-1">
@@ -73,9 +71,7 @@ export default function LiveHero() {
           NOT LIVE
         </span>
       </div>
-
-      <p className="font-data font-bold text-rule leading-none mb-3"
-        style={{ fontSize: 'clamp(3rem, 14vw, 5rem)' }}>
+      <p className="font-data font-bold text-rule leading-none mb-3 text-[clamp(3rem,14vw,5rem)]">
         $0.00
       </p>
       <p className="text-ghost text-sm mb-6">
@@ -83,27 +79,28 @@ export default function LiveHero() {
           ? 'The combined balance across all UNIBEN faculties will appear here once faculties are registered and initialized.'
           : `${approvedCount} ${approvedCount === 1 ? 'faculty has' : 'faculties have'} been approved and are awaiting on-chain initialization.`}
       </p>
-
       <p className="font-data text-xs text-ghost border-t border-rule pt-4 mt-1">
         Faculties are onboarded directly by LevyLedger admins.
+      </p>
+      <p className="font-data text-ghost text-[10px] mt-3">
+        DEMO NETWORK · TEST USDC ONLY · NO REAL FUNDS
       </p>
     </div>
   )
 
-  // ── Aggregate live ───────────────────────────────────────────────────────
+  // Aggregate live
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <p className="font-data text-ghost text-xs tracking-widest uppercase">
           UNIBEN Faculties · Live
         </p>
-        <span className="font-data text-xs text-nigerian border border-nigerian px-2 py-0.5">
+        <span className="font-data text-xs text-nigerian border border-nigerian px-2 py-0.5 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 bg-nigerian pulse-dot" />
           ON-CHAIN
         </span>
       </div>
-
-      <p className="font-data font-bold text-uniben leading-none mb-2"
-        style={{ fontSize: 'clamp(3rem, 14vw, 5rem)' }}>
+      <p className="font-data font-bold text-uniben leading-none mb-2 text-[clamp(3rem,14vw,5rem)]">
         ${formatUSDC(animatedBalance)}
       </p>
       <p className="font-data text-ghost text-sm mb-6">
@@ -128,6 +125,7 @@ export default function LiveHero() {
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-3">
         Top Faculties
       </p>
+
       {liveRows.slice(0, 3).map(r => (
         <Link key={r.slug} href={`/${r.slug}`}>
           <div className="border-t border-rule py-4 flex items-center justify-between group">
@@ -150,6 +148,9 @@ export default function LiveHero() {
       >
         View all faculties →
       </Link>
+      <p className="font-data text-ghost text-[10px] mt-3">
+        DEMO NETWORK · TEST USDC ONLY · NO REAL FUNDS
+      </p>
     </div>
   )
 }
