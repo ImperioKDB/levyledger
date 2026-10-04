@@ -7,16 +7,17 @@ interface Props {
   proposal:   any
   university: string
   signers:    any[]
+  threshold?: number
 }
 
-export default function ProposalCard({ proposal, university, signers }: Props) {
+export default function ProposalCard({ proposal, university, signers, threshold = 3 }: Props) {
   const status     = Object.keys(proposal.status)[0] as string
   const category   = Object.keys(proposal.category)[0] as string
   const isExecuted = status === 'executed'
 
   return (
     <Link href={`/${university}/proposals/${proposal.index}`}>
-      {/* Executed left border stays green — green = done is universal */}
+      {/* Executed left border stays green. Green = done is universal. */}
       <div className={`border-b border-rule py-5 group cursor-pointer ${
         isExecuted ? 'border-l-2 border-l-nigerian pl-4' : ''
       }`}>
@@ -34,7 +35,7 @@ export default function ProposalCard({ proposal, university, signers }: Props) {
                 {CATEGORY_LABELS[category] || category}
               </span>
               <span className="font-data text-xs text-ghost">
-                {proposal.signaturesFor}/{signers.length} signed
+                {proposal.signaturesFor}/{threshold} signed
               </span>
             </div>
           </div>
