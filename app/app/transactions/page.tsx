@@ -1,16 +1,18 @@
 'use client'
+
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
 import StatusBadge from '@/components/StatusBadge'
 import EmptyState from '@/components/EmptyState'
+import LoadingSkeleton from '@/components/LoadingSkeleton'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopTransactionsList from '@/components/DesktopTransactionsList'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
+import { fetchFacultyBySlug } from '@/lib/supabase'
 import { formatUSDC } from '@/lib/anchor'
-import { UNIVERSITIES } from '@/lib/constants'
 
 interface RealTx {
   id: string
@@ -23,20 +25,19 @@ interface RealTx {
 function TransactionsContent() {
   const searchParams = useSearchParams()
   const uniSlug = searchParams.get('treasury') || 'uniben'
-  
+
   const [transactions, setTransactions] = useState<RealTx[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [facultyName, setFacultyName] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       const t = await fetchTreasury(uniSlug)
       if (!t) { setLoading(false); return }
-      
       const count = typeof t.proposalCount?.toNumber === 'function'
         ? t.proposalCount.toNumber() : Number(t.proposalCount)
       const proposals = await fetchAllProposals(t.pda, count)
-      
       // Derive real transactions from executed proposals
       const executed = proposals
         .filter((p: any) => Object.keys(p.status)[0] === 'executed')
@@ -53,40 +54,42 @@ function TransactionsContent() {
           }
         })
         .sort((a: any, b: any) => parseInt(b.id.split('-')[1]) - parseInt(a.id.split('-')[1]))
-        
       setTransactions(executed)
       setLoading(false)
     }
     load()
+    fetchFacultyBySlug(uniSlug)
+      .then(r => setFacultyName(r?.department ?? null))
+      .catch(() => setFacultyName(null))
   }, [uniSlug])
 
-  const universityName = UNIVERSITIES[uniSlug] || uniSlug.toUpperCase()
+  const displayName = facultyName || uniSlug.toUpperCase()
 
   return (
     <>
       <div className="xl:hidden">
-        <main className="min-h-screen bg-ink pb-24 pt-16">
+        <main id="main-content" className="min-h-[100dvh] bg-ink pb-24 pt-[calc(4rem+env(safe-area-inset-top))]">
           <MobileHeader />
           <section className="px-4 py-6 border-b border-rule">
-            <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">{uniSlug.toUpperCase()}</p>
-            <h1 className="font-display font-bold text-ledger text-2xl">Transactions</h1>
+            <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">{displayName.toUpperCase()}</p>
+            <h1 className="font-display font-bold text-ledger text-2xl tracking-tight">Transactions</h1>
             <p className="text-body text-xs mt-1">Executed spending proposals for this treasury</p>
           </section>
           <section className="px-4 pt-4">
             {loading ? (
-              <p className="font-data text-ghost text-xs">Loading transactions...</p>
+              <LoadingSkeleton lines={5} />
             ) : transactions.length === 0 ? (
-              <EmptyState 
-                title="No Transactions Yet" 
-                body="Executed spending proposals will appear here as on-chain records." 
+              <EmptyState
+                title="No transactions yet"
+                body="Executed spending proposals will appear here as on-chain records."
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 stagger">
                 {transactions.map((tx) => (
                   <div key={tx.id} className="border border-rule bg-paper">
                     <button
                       onClick={() => setExpanded(expanded === tx.id ? null : tx.id)}
-                      className="w-full p-4 flex items-center justify-between text-left"
+                      className="w-full p-4 flex items-center justify-between text-left hover:bg-lifted active:bg-lifted transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-8 h-8 flex items-center justify-center border border-rule text-ledger">
@@ -116,13 +119,14 @@ function TransactionsContent() {
               </div>
             )}
           </section>
-          <BottomNav university={uniSlug} />
+          <BottomNav university={uniSlug} activeTab="more" />
         </main>
       </div>
-      <div className="hidden xl:flex min-h-screen bg-ink">
+
+      <div className="hidden xl:flex min-h-[100dvh] bg-ink">
         <DesktopSidebar university={uniSlug} />
         <div className="flex-1 flex flex-col">
-          <DesktopTopBar universityName={universityName} />
+          <DesktopTopBar universityName={displayName} />
           <DesktopTransactionsList transactions={transactions} loading={loading} />
         </div>
       </div>
@@ -132,7 +136,7 @@ function TransactionsContent() {
 
 export default function TransactionsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-ink" />}>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-ink" />}>
       <TransactionsContent />
     </Suspense>
   )
