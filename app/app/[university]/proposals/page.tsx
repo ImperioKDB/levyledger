@@ -6,12 +6,13 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import RoleBadge from '@/components/RoleBadge'
 import ConnectWallet from '@/components/ConnectWallet'
-import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
+import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
 import BottomNav from '@/components/BottomNav'
 import EmptyState from '@/components/EmptyState'
+import LoadingSkeleton from '@/components/LoadingSkeleton'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopProposalsList from '@/components/DesktopProposalsList'
@@ -24,24 +25,30 @@ export default function FacultyProposalsPage() {
   const wallet = useWallet()
   const searchParams = useSearchParams()
   const initialFilter = (searchParams.get('filter') || 'all')
+
   const [treasury,    setTreasury]    = useState<any>(null)
   const [proposals,   setProposals]   = useState<any[]>([])
   const [facultyName, setFacultyName] = useState<string | null>(null)
   const [loading,     setLoading]     = useState(true)
+  const [loadError,   setLoadError]   = useState(false)
   const [filter,      setFilter]      = useState<Filter>(
     (FILTERS.find(f => f.toLowerCase() === initialFilter.toLowerCase()) || 'All')
   )
 
   async function load() {
     const t = await fetchTreasury(university)
-    if (!t) { setLoading(false); return }
+    if (!t) {
+      if (getLastTreasuryFetchError()) setLoadError(true)
+      setLoading(false)
+      return
+    }
+    setLoadError(false)
     setTreasury(t)
     const count = typeof t.proposalCount?.toNumber === 'function'
       ? t.proposalCount.toNumber() : Number(t.proposalCount)
     const p = await fetchAllProposals(t.pda, count)
     setProposals(p)
     setLoading(false)
-
     const req = await fetchFacultyBySlug(university)
     setFacultyName(req?.department ?? null)
   }
@@ -65,12 +72,36 @@ export default function FacultyProposalsPage() {
 
   const desktopFilter = filter.toLowerCase() as 'all' | 'active' | 'executed' | 'rejected' | 'expired'
 
+  if (loadError) return (
+    <main className="min-h-[100dvh] bg-ink">
+      <header className="border-b border-rule px-6 py-4">
+        <Link href="/" className="font-data text-ghost text-xs hover:text-uniben transition-colors">← LEVYLEDGER</Link>
+      </header>
+      <div className="px-6 pt-12 max-w-md">
+        <p className="font-data text-void text-xs tracking-widest uppercase mb-4">Connection failed</p>
+        <h1 className="font-display text-2xl font-bold text-ledger tracking-tight mb-3">
+          Could not reach the ledger
+        </h1>
+        <p className="text-body text-sm max-w-xs leading-relaxed mb-6">
+          The Solana RPC did not respond. The record itself is safe on-chain.
+          Retry in a moment.
+        </p>
+        <button
+          onClick={() => { setLoading(true); setLoadError(false); load() }}
+          className="font-data text-xs tracking-widest py-3 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink active:scale-[0.98] transition-all"
+        >
+          TRY AGAIN
+        </button>
+      </div>
+    </main>
+  )
+
   return (
     <>
       <div className="xl:hidden">
-        <main className="min-h-screen bg-ink pb-16">
+        <main id="main-content" className="min-h-[100dvh] bg-ink pb-16">
           <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4 flex items-center justify-between gap-2">
-            <Link href={`/${university}`} className="font-data text-ghost text-xs shrink-0">
+            <Link href={`/${university}`} className="font-data text-ghost text-xs shrink-0 hover:text-uniben transition-colors">
               ← {displayName.toUpperCase()}
             </Link>
             <div className="flex items-center gap-2 shrink-0">
@@ -80,7 +111,7 @@ export default function FacultyProposalsPage() {
           </header>
 
           <section className="px-6 pt-6 pb-4 border-b border-rule">
-            <h1 className="font-display text-2xl font-bold text-ledger">Proposals</h1>
+            <h1 className="font-display text-2xl font-bold text-ledger tracking-tight">Proposals</h1>
             <p className="text-body text-xs mt-1">All spending requests for {displayName}</p>
           </section>
 
@@ -89,7 +120,7 @@ export default function FacultyProposalsPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`font-data text-xs px-3 py-1.5 border shrink-0 transition-colors ${
+                className={`font-data text-xs px-4 min-h-[44px] border shrink-0 transition-colors active:scale-[0.98] ${
                   filter === f
                     ? 'border-uniben text-uniben bg-ink'
                     : 'border-rule text-ghost hover:border-ghost'
@@ -102,18 +133,21 @@ export default function FacultyProposalsPage() {
 
           <section className="px-6 pt-2 pb-28">
             {loading ? (
-              <p className="font-data text-ghost text-xs py-8">Loading proposals...</p>
+              <div className="py-8"><LoadingSkeleton lines={5} /></div>
             ) : filtered.length === 0 ? (
               <EmptyState filter={filter.toLowerCase()} university={university} />
             ) : (
-              filtered.map(p => (
-                <ProposalCard
-                  key={p.index}
-                  proposal={p}
-                  university={university}
-                  signers={treasury?.signers}
-                />
-              ))
+              <div className="stagger">
+                {filtered.map(p => (
+                  <ProposalCard
+                    key={p.index}
+                    proposal={p}
+                    university={university}
+                    signers={treasury?.signers}
+                    threshold={treasury?.threshold || 3}
+                  />
+                ))}
+              </div>
             )}
           </section>
 
@@ -121,7 +155,7 @@ export default function FacultyProposalsPage() {
         </main>
       </div>
 
-      <div className="hidden xl:flex min-h-screen bg-ink">
+      <div className="hidden xl:flex min-h-[100dvh] bg-ink">
         <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
           <DesktopTopBar universityName={displayName} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
