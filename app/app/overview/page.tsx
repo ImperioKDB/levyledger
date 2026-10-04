@@ -22,10 +22,8 @@ export default function OverviewPage() {
 
   useEffect(() => {
     let cancelled = false
-
     async function load() {
       const faculties = await fetchApprovedUnibenFaculties()
-
       const results = await Promise.all(
         faculties.map(async (f) => {
           const t = await fetchTreasury(f.slug)
@@ -49,13 +47,11 @@ export default function OverviewPage() {
           }
         })
       )
-
       if (cancelled) return
       setRows(results)
       setAnyFailed(results.some((r) => r.loadFailed))
       setLoading(false)
     }
-
     load()
     return () => { cancelled = true }
   }, [])
@@ -71,30 +67,29 @@ export default function OverviewPage() {
   )
 
   return (
-    <main className="min-h-screen bg-ink bg-dot-matrix px-6 py-10">
-      <Link href="/" className="font-data text-ghost text-xs tracking-widest mb-8 inline-block">
-        &larr; LEVYLEDGER
+    <main id="main-content" className="min-h-[100dvh] bg-ink px-6 py-10">
+      <Link href="/" className="font-data text-ghost text-xs tracking-widest mb-8 inline-block hover:text-uniben transition-colors">
+        ← LEVYLEDGER
       </Link>
-
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
-        Aggregate — every approved faculty
+        Aggregate across every approved faculty
       </p>
-      <h1 className="font-display font-bold text-ledger text-3xl mb-8">
+      <h1 className="font-display font-bold text-ledger text-3xl tracking-tight mb-8">
         UNIBEN Faculties Treasury
       </h1>
 
       {anyFailed && !loading && (
-        <div className="border border-yellow-600/40 bg-yellow-950/20 text-yellow-400 text-xs font-data px-4 py-3 mb-6">
-          One or more faculty treasuries failed to load — totals below may be
-          understated. Not a confirmation that any faculty has zero balance.
+        <div className="border border-pending bg-paper text-pending text-xs font-data px-4 py-3 mb-6">
+          One or more faculty treasuries failed to load. Totals below may be
+          understated. This is not a confirmation that any faculty has zero balance.
         </div>
       )}
 
       {loading ? (
-        <p className="text-ghost text-sm">Loading aggregate treasury data…</p>
+        <p className="text-ghost text-sm">Loading aggregate treasury data...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 mb-10">
+          <div className="grid grid-cols-2 gap-4 mb-10 stagger">
             <MetricCard label="Available Balance" value={formatUSDC(totals.availableBalance)} highlight />
             <MetricCard label="Total Deposited" value={formatUSDC(totals.totalDeposited)} />
             <MetricCard label="Total Spent" value={formatUSDC(totals.totalSpent)} />
@@ -104,17 +99,18 @@ export default function OverviewPage() {
           <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">
             By faculty ({rows.length})
           </p>
-          <div className="flex flex-col gap-2">
+
+          <div className="flex flex-col gap-2 stagger">
             {rows.map((r) => (
               <Link
                 key={r.slug}
                 href={`/${r.slug}`}
-                className="flex justify-between items-center border border-rule bg-paper/40 px-4 py-3 hover:border-ghost transition-colors"
+                className="flex justify-between items-center border border-rule bg-paper/40 px-4 py-3 hover:border-ghost active:border-ghost transition-colors"
               >
                 <span className="text-body text-sm">
                   {r.department}
                   {r.loadFailed && (
-                    <span className="text-yellow-500 text-xs ml-2">(failed to load)</span>
+                    <span className="text-pending text-xs ml-2">(failed to load)</span>
                   )}
                 </span>
                 <span className="font-data text-uniben text-sm">
