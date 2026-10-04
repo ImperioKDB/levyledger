@@ -1,31 +1,89 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+interface NavItem {
+  label: string
+  href: string
+  exact?: boolean
+}
 
 export default function DesktopSidebar({ university, isAuthorized = false }: { university: string; isAuthorized?: boolean }) {
-  const items = [
-    { label: 'Overview',      href: `/${university}` },
-    { label: 'Proposals',     href: `/${university}/proposals` },
-    ...(isAuthorized ? [{ label: 'Admin', href: `/admin?treasury=${university}` }] : []),
-    { label: 'All Faculties', href: '/universities' },
+  const pathname = usePathname()
+
+  const groups: { title: string | null; items: NavItem[] }[] = [
+    {
+      title: null,
+      items: [
+        { label: 'Overview',  href: `/${university}`, exact: true },
+        { label: 'Proposals', href: `/${university}/proposals` },
+        { label: 'Deposit',   href: `/${university}/deposit` },
+      ],
+    },
+    {
+      title: 'Records',
+      items: [
+        { label: 'Transactions', href: `/transactions?treasury=${university}`, exact: true },
+        { label: 'Reports',      href: `/${university}/reports` },
+        { label: 'Signatures',   href: `/${university}/signatures` },
+      ],
+    },
+    {
+      title: 'Registry',
+      items: [
+        { label: 'Wallets',  href: `/${university}/wallets` },
+        { label: 'Members',  href: `/${university}/members` },
+        { label: 'Settings', href: `/${university}/settings` },
+      ],
+    },
   ]
+
+  function isActive(item: NavItem): boolean {
+    const base = item.href.split('?')[0]
+    return item.exact
+      ? pathname === base
+      : pathname === base || pathname.startsWith(base + '/')
+  }
+
+  const linkClass = (active: boolean) =>
+    `block px-5 py-3 font-data text-xs border-l-2 transition-colors ${
+      active
+        ? 'border-uniben bg-lifted text-ledger'
+        : 'border-transparent text-ghost hover:text-uniben hover:bg-lifted'
+    }`
 
   return (
     <aside className="w-56 shrink-0 border-r border-rule bg-paper flex flex-col">
       <div className="px-5 py-5 border-b border-rule">
-        <span className="font-data text-ledger text-sm tracking-widest">LEVYLEDGER</span>
+        <Link href="/" className="font-data text-ledger text-sm tracking-widest">LEVYLEDGER</Link>
       </div>
-      <nav className="flex-1 py-4">
-        {items.map(item => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="block px-5 py-3 font-data text-xs text-ghost hover:text-uniben hover:bg-lifted transition-colors"
-          >
-            {item.label.toUpperCase()}
-          </Link>
+      <nav className="flex-1 py-3 overflow-y-auto">
+        {groups.map((group, gi) => (
+          <div key={gi} className="mb-2">
+            {group.title && (
+              <p className="font-data text-ghost text-[10px] tracking-widest uppercase px-5 pt-4 pb-1">
+                {group.title}
+              </p>
+            )}
+            {group.items.map(item => (
+              <Link key={item.label} href={item.href} className={linkClass(isActive(item))}>
+                {item.label.toUpperCase()}
+              </Link>
+            ))}
+          </div>
         ))}
       </nav>
+      <div className="border-t border-rule py-3">
+        {isAuthorized && (
+          <Link href={`/admin?treasury=${university}`} className={linkClass(pathname.startsWith('/admin'))}>
+            ADMIN
+          </Link>
+        )}
+        <Link href="/universities" className={linkClass(pathname === '/universities')}>
+          ALL FACULTIES
+        </Link>
+      </div>
     </aside>
   )
 }
