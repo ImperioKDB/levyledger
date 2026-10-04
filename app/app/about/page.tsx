@@ -6,18 +6,18 @@ const STEPS = [
   { title: 'Funds deposited on-chain', body: 'Collected naira is converted to USDC and deposited into the smart contract vault. Every deposit is permanent and public.' },
   { title: 'Spending requires 3-of-5 approval', body: 'Any exec can propose a payment. Three of the five registered executives must approve it before a single naira can move.' },
   { title: 'Payment executes automatically', body: 'The moment the third signature lands, the contract transfers funds to the recipient. No human releases it. The code runs.' },
-  { title: 'Any student can verify', body: 'Every student opens this page — no wallet, no account — and sees the complete financial history of their union. Forever.' },
+  { title: 'Any student can verify', body: 'Every student opens this page, no wallet and no account, and sees the complete financial history of their union. Forever.' },
 ]
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-ink pb-12 pt-16">
+    <main id="main-content" className="min-h-[100dvh] bg-ink pb-12 pt-[calc(4rem+env(safe-area-inset-top))]">
       <MobileHeader />
       <section className="px-4 py-8 md:px-16 md:py-16 max-w-3xl md:mx-auto border-b border-rule">
-        <h1 className="font-display font-bold text-ledger text-2xl md:text-4xl mb-4">About LevyLedger</h1>
+        <h1 className="font-display font-bold text-ledger text-2xl md:text-4xl tracking-tight mb-4">About LevyLedger</h1>
         <p className="text-body text-sm md:text-base leading-relaxed">
           Student union executives in Nigerian universities collect millions of naira every year with
-          zero public accountability. LevyLedger makes that structurally impossible — every levy, every
+          zero public accountability. LevyLedger makes that structurally impossible. Every levy, every
           vote, on-chain and permanent.
         </p>
       </section>
@@ -33,7 +33,7 @@ export default function AboutPage() {
         </div>
       </section>
       <section className="px-4 py-8 md:px-16 max-w-3xl md:mx-auto">
-        <Link href="/universities" className="block w-full text-center font-data text-xs tracking-widest py-4 border border-uniben text-uniben hover:bg-uniben hover:text-ink transition-colors">
+        <Link href="/universities" className="block w-full text-center font-data text-xs tracking-widest py-4 border border-uniben text-uniben hover:bg-uniben hover:text-ink active:scale-[0.98] transition-all">
           VIEW ALL FACULTIES →
         </Link>
       </section>
