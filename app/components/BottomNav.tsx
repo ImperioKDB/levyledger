@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-type Tab = 'overview' | 'proposals' | 'deposit' | 'admin'
+type Tab = 'overview' | 'proposals' | 'deposit' | 'more' | 'admin'
 
 interface Props {
   university?: string
@@ -18,34 +18,34 @@ export default function BottomNav({ university, activeTab = 'overview', isAuthor
   const overviewActive  = !isAdminPage && activeTab === 'overview'
   const proposalsActive = !isAdminPage && activeTab === 'proposals'
   const depositActive   = !isAdminPage && activeTab === 'deposit'
+  const moreActive      = !isAdminPage && activeTab === 'more'
   const adminActive     = isAdminPage
 
   // tracking-wide (not tracking-widest) plus horizontal padding keeps the
   // longest label ("PROPOSALS") from overflowing its flex-1 column and
   // getting clipped by the screen edge on the rightmost tab.
   const baseClass = (active: boolean) =>
-    `flex-1 flex flex-col items-center px-1 py-3 transition-colors ${
+    `flex-1 flex flex-col items-center justify-center min-h-[44px] px-1 py-2 transition-colors ${
       active ? 'text-uniben border-t border-uniben -mt-px' : 'text-ghost hover:text-body'
     }`
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 bg-ink border-t border-rule z-50"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
+    <nav className="fixed bottom-0 left-0 right-0 bg-ink border-t border-rule z-50 pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
         <Link href={university ? `/${university}` : '/universities'} className={baseClass(overviewActive)}>
           <span className="font-data text-[10px] tracking-wide whitespace-nowrap">OVERVIEW</span>
         </Link>
-
         <Link href={university ? `/${university}/proposals` : '/universities'} className={baseClass(proposalsActive)}>
           <span className="font-data text-[10px] tracking-wide whitespace-nowrap">PROPOSALS</span>
         </Link>
-
         <Link href={university ? `/${university}/deposit` : '/universities'} className={baseClass(depositActive)}>
           <span className="font-data text-[10px] tracking-wide whitespace-nowrap">DEPOSIT</span>
         </Link>
-
+        {university && (
+          <Link href={`/${university}/more`} className={baseClass(moreActive)}>
+            <span className="font-data text-[10px] tracking-wide whitespace-nowrap">MORE</span>
+          </Link>
+        )}
         {isAuthorized && (
           <Link
             href={university ? `/admin?treasury=${university}` : '/admin'}
