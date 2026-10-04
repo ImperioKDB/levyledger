@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import RoleBadge from '@/components/RoleBadge'
 import ConnectWallet from '@/components/ConnectWallet'
-import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
+import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
 import ProposalCard from '@/components/ProposalCard'
@@ -26,8 +26,8 @@ export default function TreasuryPage() {
   const [facultyName, setFacultyName] = useState<string | null>(null)
   const [loading,     setLoading]     = useState(true)
   const [notFound,    setNotFound]    = useState(false)
+  const [loadError,   setLoadError]   = useState(false)
   const [scrolled,    setScrolled]    = useState(false)
-
   const statsRef   = useRef<HTMLDivElement>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -45,17 +45,19 @@ export default function TreasuryPage() {
   async function load() {
     const t = await fetchTreasury(university)
     if (!t) {
-      setNotFound(true); setLoading(false)
+      if (getLastTreasuryFetchError()) setLoadError(true)
+      else setNotFound(true)
+      setLoading(false)
       if (intervalRef.current) clearInterval(intervalRef.current)
       return
     }
+    setLoadError(false)
     setTreasury(t)
     const count = typeof t.proposalCount?.toNumber === 'function'
       ? t.proposalCount.toNumber() : Number(t.proposalCount)
     const p = await fetchAllProposals(t.pda, count)
     setProposals(p)
     setLoading(false)
-
     // Real department name if this slug is in the directory; otherwise the
     // raw slug is shown as-is rather than a dead static lookup.
     const req = await fetchFacultyBySlug(university)
@@ -68,10 +70,15 @@ export default function TreasuryPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [university])
 
+  function retry() {
+    setLoading(true); setLoadError(false); setNotFound(false)
+    load()
+  }
+
   if (loading) return (
-    <main className="min-h-screen bg-ink">
+    <main className="min-h-[100dvh] bg-ink">
       <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
-        <Link href="/" className="font-data text-ghost text-xs">← LEVYLEDGER</Link>
+        <Link href="/" className="font-data text-ghost text-xs hover:text-uniben transition-colors">← LEVYLEDGER</Link>
       </header>
       <div className="px-6 pt-8 space-y-6">
         {[1,2,3,4].map(i => (
@@ -84,21 +91,46 @@ export default function TreasuryPage() {
     </main>
   )
 
-  if (notFound) return (
-    <main className="min-h-screen bg-ink">
+  if (loadError) return (
+    <main className="min-h-[100dvh] bg-ink">
       <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
-        <Link href="/" className="font-data text-ghost text-xs">← LEVYLEDGER</Link>
+        <Link href="/" className="font-data text-ghost text-xs hover:text-uniben transition-colors">← LEVYLEDGER</Link>
+      </header>
+      <div className="px-6 pt-12 max-w-md">
+        <p className="font-data text-void text-xs tracking-widest uppercase mb-4">Connection failed</p>
+        <h1 className="font-display text-2xl font-bold text-ledger tracking-tight mb-3">
+          Could not reach the ledger
+        </h1>
+        <p className="text-body text-sm max-w-xs leading-relaxed mb-6">
+          The Solana RPC did not return the treasury for "{university}".
+          This is usually a network problem, not a missing treasury. The
+          record itself is safe on-chain.
+        </p>
+        <button
+          onClick={retry}
+          className="font-data text-xs tracking-widest py-3 px-6 border border-uniben text-uniben hover:bg-uniben hover:text-ink active:scale-[0.98] transition-all"
+        >
+          TRY AGAIN
+        </button>
+      </div>
+    </main>
+  )
+
+  if (notFound) return (
+    <main className="min-h-[100dvh] bg-ink">
+      <header className="sticky top-0 z-40 bg-ink border-b border-rule px-6 py-4">
+        <Link href="/" className="font-data text-ghost text-xs hover:text-uniben transition-colors">← LEVYLEDGER</Link>
       </header>
       <div className="px-6 pt-12">
         <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">
           {university.toUpperCase()}
         </p>
-        <h1 className="font-display text-2xl font-bold text-ledger mb-3">
+        <h1 className="font-display text-2xl font-bold text-ledger tracking-tight mb-3">
           Treasury not found
         </h1>
         <p className="text-body text-sm max-w-xs leading-relaxed">
           No on-chain treasury exists for "{university}" yet. Faculty unions
-          are onboarded directly by LevyLedger admins — if this is your
+          are onboarded directly by LevyLedger admins. If this is your
           faculty, contact a LevyLedger admin to get registered.
         </p>
       </div>
@@ -114,7 +146,7 @@ export default function TreasuryPage() {
   return (
     <>
       <div className="xl:hidden">
-        <main className="min-h-screen bg-ink pb-16">
+        <main id="main-content" className="min-h-[100dvh] bg-ink pb-16">
           <header className="sticky top-0 z-40 bg-ink border-b border-rule">
             <div className="px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2 shrink-0">
@@ -142,18 +174,21 @@ export default function TreasuryPage() {
               <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
                 UNIBEN Faculty Union
               </p>
-              <h1 className="font-display text-2xl font-bold text-ledger">
+              <h1 className="font-display text-2xl font-bold text-ledger tracking-tight">
                 {displayName} Treasury
               </h1>
             </div>
             <div>
-              <Link href={`/${university}/deposit`} className="inline-block w-full md:w-auto text-center font-data text-xs tracking-widest py-3 px-6 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+              <Link
+                href={`/${university}/deposit`}
+                className="inline-block w-full md:w-auto text-center font-data text-xs tracking-widest py-3 px-6 bg-uniben text-ink hover:opacity-90 transition-all duration-150 active:scale-[0.98]"
+              >
                 DEPOSIT DUES →
               </Link>
             </div>
           </section>
 
-          <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 border-b border-rule">
+          <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 border-b border-rule stagger">
             <MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
             <MetricCard label="Reserved Balance"   value={'$' + formatUSDC(treasury.reservedBalance)} />
             <MetricCard label="Total Deposited"    value={'$' + formatUSDC(treasury.totalDeposited)} />
@@ -174,14 +209,17 @@ export default function TreasuryPage() {
             {recentProposals.length === 0 ? (
               <p className="font-data text-ghost text-sm py-4">No proposals yet.</p>
             ) : (
-              recentProposals.map(p => (
-                <ProposalCard
-                  key={p.index}
-                  proposal={p}
-                  university={university}
-                  signers={treasury.signers}
-                />
-              ))
+              <div className="stagger">
+                {recentProposals.map(p => (
+                  <ProposalCard
+                    key={p.index}
+                    proposal={p}
+                    university={university}
+                    signers={treasury.signers}
+                    threshold={treasury.threshold}
+                  />
+                ))}
+              </div>
             )}
           </section>
 
@@ -189,7 +227,7 @@ export default function TreasuryPage() {
         </main>
       </div>
 
-      <div className="hidden xl:flex min-h-screen bg-ink">
+      <div className="hidden xl:flex min-h-[100dvh] bg-ink">
         <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
           <DesktopTopBar universityName={displayName} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
