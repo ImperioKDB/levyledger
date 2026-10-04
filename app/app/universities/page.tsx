@@ -24,7 +24,6 @@ export default function FacultiesPage() {
 
   async function load() {
     const requests = await fetchApprovedUnibenFaculties()
-
     const results = await Promise.all(
       requests.map(async (req) => {
         const t = await fetchTreasury(req.slug)
@@ -36,7 +35,6 @@ export default function FacultiesPage() {
         return { slug: req.slug, department: req.department, balance, proposals, live: true }
       })
     )
-
     results.sort((a, b) => (b.live ? b.balance : -1) - (a.live ? a.balance : -1))
     setRows(results)
     setLoading(false)
@@ -45,14 +43,12 @@ export default function FacultiesPage() {
   useEffect(() => { load() }, [])
 
   return (
-    <main className="min-h-screen bg-ink pb-12 pt-16">
+    <main id="main-content" className="min-h-[100dvh] bg-ink pb-12 pt-[calc(4rem+env(safe-area-inset-top))]">
       <MobileHeader />
-
       <section className="px-4 py-6 border-b border-rule">
-        <h1 className="font-display font-bold text-ledger text-2xl">Faculties</h1>
+        <h1 className="font-display font-bold text-ledger text-2xl tracking-tight">Faculties</h1>
         <p className="text-body text-xs mt-1">Every registered UNIBEN faculty union, live on-chain</p>
       </section>
-
       <section className="px-4 py-4">
         {loading ? (
           <LoadingSkeleton lines={6} />
@@ -62,10 +58,10 @@ export default function FacultiesPage() {
             body="Once a faculty union is registered and approved, it will appear here with a live on-chain balance."
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 stagger">
             {rows.map((r) => (
               <Link key={r.slug} href={`/${r.slug}`}>
-                <div className={`border border-rule p-4 bg-paper flex items-center justify-between group ${r.live ? '' : 'opacity-50'}`}>
+                <div className={`border border-rule p-4 bg-paper flex items-center justify-between group hover:border-ghost active:border-ghost transition-colors ${r.live ? '' : 'opacity-50'}`}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-display font-semibold text-ledger text-sm truncate">{r.department}</p>
