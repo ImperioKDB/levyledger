@@ -7,6 +7,8 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import RoleBadge from '@/components/RoleBadge'
 import ConnectWallet from '@/components/ConnectWallet'
 import DemoBanner from '@/components/DemoBanner'
+import AuditJourney from '@/components/AuditJourney'
+import TermHint from '@/components/TermHint'
 import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
@@ -188,17 +190,33 @@ export default function TreasuryPage() {
               >
                 DEPOSIT DUES →
               </Link>
+              <p className="font-data text-ghost text-[10px] mt-2 text-center md:text-right">
+                Viewing is public. Deposits and signatures need a connected wallet.
+              </p>
             </div>
           </section>
 
-          <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 border-b border-rule stagger">
-            <MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
-            <MetricCard label="Reserved Balance"   value={'$' + formatUSDC(treasury.reservedBalance)} />
-            <MetricCard label="Total Deposited"    value={'$' + formatUSDC(treasury.totalDeposited)} />
-            <MetricCard label="Total Spent"        value={'$' + formatUSDC(treasury.totalSpent)} />
-            <MetricCard label="Active Proposals"   value={treasury.activeProposalCount?.toString?.() ?? String(treasury.activeProposalCount)} />
-            <MetricCard label="Total Proposals"    value={treasury.proposalCount?.toString?.() ?? String(treasury.proposalCount)} />
-          </div>
+          <section className="border-b border-rule">
+            <div ref={statsRef} className="px-6 py-6 grid grid-cols-2 gap-3 stagger">
+              <MetricCard label="Available Balance" value={'$' + formatUSDC(treasury.availableBalance)} highlight />
+              <MetricCard label="Reserved Balance"   value={'$' + formatUSDC(treasury.reservedBalance)} />
+              <MetricCard label="Total Deposited"    value={'$' + formatUSDC(treasury.totalDeposited)} />
+              <MetricCard label="Total Spent"        value={'$' + formatUSDC(treasury.totalSpent)} />
+              <MetricCard label="Active Proposals"   value={treasury.activeProposalCount?.toString?.() ?? String(treasury.activeProposalCount)} />
+              <MetricCard label="Total Proposals"    value={treasury.proposalCount?.toString?.() ?? String(treasury.proposalCount)} />
+            </div>
+            <div className="px-6 pb-6">
+              <TermHint>
+                Available is what the union can spend right now. Reserved is money locked behind
+                proposals still collecting signatures. Nothing leaves the vault until{' '}
+                {treasury.threshold} of {treasury.signers.length} execs sign.
+              </TermHint>
+            </div>
+          </section>
+
+          <section className="px-6 pt-6 pb-6 border-b border-rule">
+            <AuditJourney university={university} />
+          </section>
 
           <section className="px-6 pt-6 pb-28">
             <div className="flex items-center justify-between mb-3">
