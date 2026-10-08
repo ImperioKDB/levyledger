@@ -10,6 +10,7 @@ import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import CopyButton from '@/components/CopyButton'
+import TermHint from '@/components/TermHint'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopWalletsView from '@/components/DesktopWalletsView'
@@ -67,25 +68,33 @@ export default function WalletsPage() {
             ) : !treasury ? (
               <p className="text-body text-sm py-8">This treasury has not been initialized on-chain yet.</p>
             ) : (
-              <div className="space-y-3 stagger">
-                {wallets.map((w) => (
-                  <div key={w.label} className="border border-rule bg-paper p-4">
-                    <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">{w.label}</p>
-                    <p className="font-data text-ledger text-xs break-all mb-3">{w.address}</p>
-                    <div className="flex items-center justify-between gap-3">
-                      <CopyButton value={w.address} />
-                      <a
-                        href={EXPLORER + '/' + w.address + '?cluster=devnet'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-data text-uniben text-xs hover:opacity-80 transition-opacity"
-                      >
-                        View on explorer ↗
-                      </a>
+              <>
+                <div className="space-y-3 stagger">
+                  {wallets.map((w) => (
+                    <div key={w.label} className="border border-rule bg-paper p-4">
+                      <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">{w.label}</p>
+                      <p className="font-data text-ledger text-xs break-all mb-3">{w.address}</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <CopyButton value={w.address} />
+                        <a
+                          href={EXPLORER + '/' + w.address + '?cluster=devnet'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-data text-uniben text-xs hover:opacity-80 transition-opacity"
+                        >
+                          View on explorer ↗
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <TermHint>
+                    The vault is the account that actually holds the funds. The treasury account is
+                    the rulebook: who can sign, and how many signatures a payment needs.
+                  </TermHint>
+                </div>
+              </>
             )}
           </section>
           <BottomNav university={university} activeTab="more" />
