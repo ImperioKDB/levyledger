@@ -9,6 +9,7 @@ import { DEVNET_USDC_MINT } from '@/lib/constants'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import CopyButton from '@/components/CopyButton'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopWalletsView from '@/components/DesktopWalletsView'
@@ -71,14 +72,17 @@ export default function WalletsPage() {
                   <div key={w.label} className="border border-rule bg-paper p-4">
                     <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">{w.label}</p>
                     <p className="font-data text-ledger text-xs break-all mb-3">{w.address}</p>
-                    <a
-                      href={EXPLORER + '/' + w.address + '?cluster=devnet'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-data text-uniben text-xs hover:opacity-80 transition-opacity"
-                    >
-                      View on explorer ↗
-                    </a>
+                    <div className="flex items-center justify-between gap-3">
+                      <CopyButton value={w.address} />
+                      <a
+                        href={EXPLORER + '/' + w.address + '?cluster=devnet'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-data text-uniben text-xs hover:opacity-80 transition-opacity"
+                      >
+                        View on explorer ↗
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
