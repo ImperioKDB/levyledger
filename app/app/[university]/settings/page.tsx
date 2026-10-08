@@ -7,6 +7,7 @@ import { fetchFacultyBySlug } from '@/lib/supabase'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import CopyButton from '@/components/CopyButton'
 import DesktopSidebar from '@/components/DesktopSidebar'
 import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopSettingsView from '@/components/DesktopSettingsView'
@@ -58,7 +59,8 @@ export default function SettingsPage() {
                 </div>
                 <div className="border border-rule bg-paper p-4">
                   <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">Treasury Address</p>
-                  <p className="font-data text-ledger text-xs break-all">{treasury.pda.toString()}</p>
+                  <p className="font-data text-ledger text-xs break-all mb-3">{treasury.pda.toString()}</p>
+                  <CopyButton value={treasury.pda.toString()} />
                 </div>
               </div>
             )}
