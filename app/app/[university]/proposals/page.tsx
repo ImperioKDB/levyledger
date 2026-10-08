@@ -115,20 +115,28 @@ export default function FacultyProposalsPage() {
             <p className="text-body text-xs mt-1">All spending requests for {displayName}</p>
           </section>
 
-          <section className="px-6 pt-4 pb-3 flex gap-2 overflow-x-auto border-b border-rule no-scrollbar">
-            {FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`font-data text-xs px-4 min-h-[44px] border shrink-0 transition-colors active:scale-[0.98] ${
-                  filter === f
-                    ? 'border-uniben text-uniben bg-ink'
-                    : 'border-rule text-ghost hover:border-ghost'
-                }`}
-              >
-                {f.toUpperCase()}
-              </button>
-            ))}
+          <section className="px-6 pt-4 pb-4 border-b border-rule">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`font-data text-xs px-4 min-h-[44px] border shrink-0 transition-colors active:scale-[0.98] ${
+                    filter === f
+                      ? 'border-uniben text-uniben bg-ink'
+                      : 'border-rule text-ghost hover:border-ghost'
+                  }`}
+                >
+                  {f.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            {treasury && (
+              <p className="text-body text-xs mt-3 leading-relaxed">
+                Active proposals need {treasury.threshold || 3} of {treasury.signers?.length || 5}
+                signatures. Executed means the payment already moved on-chain.
+              </p>
+            )}
           </section>
 
           <section className="px-6 pt-2 pb-28">
