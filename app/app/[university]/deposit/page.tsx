@@ -8,6 +8,7 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { BN } from '@coral-xyz/anchor'
 import { toPng } from 'html-to-image'
 import ConnectWallet from '@/components/ConnectWallet'
+import DemoBanner from '@/components/DemoBanner'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
 import { fetchTreasury, getLastTreasuryFetchError } from '@/lib/queries'
@@ -259,6 +260,7 @@ export default function DepositPage() {
 
   const body = (
     <div className="max-w-lg mx-auto">
+      <div className="mb-5"><DemoBanner /></div>
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-1">Deposit Dues</p>
       <h1 className="font-display text-2xl font-bold text-ledger tracking-tight mb-6">{displayName}</h1>
 
