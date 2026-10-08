@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
+import { PublicKey } from '@solana/web3.js'
 import MobileHeader from '@/components/MobileHeader'
 import BottomNav from '@/components/BottomNav'
 import StatusBadge from '@/components/StatusBadge'
@@ -12,7 +13,7 @@ import DesktopTopBar from '@/components/DesktopTopBar'
 import DesktopTransactionsList from '@/components/DesktopTransactionsList'
 import { fetchTreasury, fetchAllProposals } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
-import { formatUSDC } from '@/lib/anchor'
+import { formatUSDC, getProposalPDA } from '@/lib/anchor'
 
 interface RealTx {
   id: string
@@ -30,15 +31,16 @@ function TransactionsContent() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [facultyName, setFacultyName] = useState<string | null>(null)
+  const [treasuryPda, setTreasuryPda] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       const t = await fetchTreasury(uniSlug)
-      if (!t) { setLoading(false); return }
+      if (!t) { setTreasuryPda(null); setLoading(false); return }
+      setTreasuryPda(t.pda.toString())
       const count = typeof t.proposalCount?.toNumber === 'function'
         ? t.proposalCount.toNumber() : Number(t.proposalCount)
       const proposals = await fetchAllProposals(t.pda, count)
-      // Derive real transactions from executed proposals
       const executed = proposals
         .filter((p: any) => Object.keys(p.status)[0] === 'executed')
         .map((p: any) => {
@@ -85,37 +87,56 @@ function TransactionsContent() {
               />
             ) : (
               <div className="space-y-3 stagger">
-                {transactions.map((tx) => (
-                  <div key={tx.id} className="border border-rule bg-paper">
-                    <button
-                      onClick={() => setExpanded(expanded === tx.id ? null : tx.id)}
-                      className="w-full p-4 flex items-center justify-between text-left hover:bg-lifted active:bg-lifted transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 flex items-center justify-center border border-rule text-ledger">
-                          ↑
-                        </span>
-                        <div>
-                          <p className="font-data text-ledger text-sm font-bold">{tx.description}</p>
-                          <p className="font-data text-ghost text-[10px]">{tx.date}</p>
+                {transactions.map((tx) => {
+                  const propIndex = parseInt(tx.id.split('-')[1])
+                  const propPda = treasuryPda
+                    ? getProposalPDA(new PublicKey(treasuryPda), propIndex)[0]
+                    : null
+                  return (
+                    <div key={tx.id} className="border border-rule bg-paper">
+                      <button
+                        onClick={() => setExpanded(expanded === tx.id ? null : tx.id)}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-lifted active:bg-lifted transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-8 h-8 flex items-center justify-center border border-rule text-ledger">
+                            ↑
+                          </span>
+                          <div>
+                            <p className="font-data text-ledger text-sm font-bold">{tx.description}</p>
+                            <p className="font-data text-ghost text-[10px]">{tx.date}</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-data text-sm font-bold text-ledger">
-                          -${formatUSDC(tx.amount)}
-                        </p>
-                      </div>
-                    </button>
-                    {expanded === tx.id && (
-                      <div className="px-4 pb-4 border-t border-rule pt-3">
-                        <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">Status</p>
-                        <StatusBadge status="executed" />
-                        <p className="font-data text-ghost text-[10px] tracking-widest uppercase mt-3 mb-1">Type</p>
-                        <p className="font-data text-ledger text-xs">Executed Proposal</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                        <div className="text-right">
+                          <p className="font-data text-sm font-bold text-ledger">
+                            -${formatUSDC(tx.amount)}
+                          </p>
+                        </div>
+                      </button>
+                      {expanded === tx.id && (
+                        <div className="px-4 pb-4 border-t border-rule pt-3">
+                          <p className="font-data text-ghost text-[10px] tracking-widest uppercase mb-1">Status</p>
+                          <StatusBadge status="executed" />
+                          <p className="font-data text-ghost text-[10px] tracking-widest uppercase mt-3 mb-1">Type</p>
+                          <p className="font-data text-ledger text-xs">Executed Proposal</p>
+                          {propPda && (
+                            <>
+                              <p className="font-data text-ghost text-[10px] tracking-widest uppercase mt-3 mb-1">Verify</p>
+                              <a
+                                href={`https://explorer.solana.com/address/${propPda.toString()}?cluster=devnet`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-data text-uniben text-xs hover:opacity-80 transition-opacity"
+                              >
+                                Proposal account on explorer ↗
+                              </a>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </section>
