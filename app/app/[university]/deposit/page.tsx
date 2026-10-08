@@ -9,6 +9,7 @@ import { BN } from '@coral-xyz/anchor'
 import { toPng } from 'html-to-image'
 import ConnectWallet from '@/components/ConnectWallet'
 import DemoBanner from '@/components/DemoBanner'
+import TermHint from '@/components/TermHint'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAnchorProgram } from '@/hooks/useAnchorProgram'
 import { fetchTreasury, getLastTreasuryFetchError } from '@/lib/queries'
@@ -294,6 +295,12 @@ export default function DepositPage() {
           <div className="border-b border-rule pb-4">
             <p className="font-data text-ghost text-xs mb-1">Available Balance</p>
             <p className="font-data text-uniben text-2xl font-bold">${formatUSDC(treasury.availableBalance)} USDC</p>
+            <div className="mt-3">
+              <TermHint>
+                USDC is the digital dollar this demo treasury uses, pegged one-to-one with the
+                US dollar. Dues are converted to USDC before they enter the vault.
+              </TermHint>
+            </div>
           </div>
 
           {checkingProfile ? (
