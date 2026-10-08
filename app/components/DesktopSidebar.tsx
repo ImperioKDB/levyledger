@@ -12,9 +12,10 @@ interface NavItem {
 export default function DesktopSidebar({ university, isAuthorized = false }: { university: string; isAuthorized?: boolean }) {
   const pathname = usePathname()
 
-  const groups: { title: string | null; items: NavItem[] }[] = [
+  const groups: { title: string | null; desc: string | null; items: NavItem[] }[] = [
     {
       title: null,
+      desc: null,
       items: [
         { label: 'Overview',  href: `/${university}`, exact: true },
         { label: 'Proposals', href: `/${university}/proposals` },
@@ -23,6 +24,7 @@ export default function DesktopSidebar({ university, isAuthorized = false }: { u
     },
     {
       title: 'Records',
+      desc: 'Money moving in and out',
       items: [
         { label: 'Transactions', href: `/transactions?treasury=${university}`, exact: true },
         { label: 'Reports',      href: `/${university}/reports` },
@@ -31,6 +33,7 @@ export default function DesktopSidebar({ university, isAuthorized = false }: { u
     },
     {
       title: 'Registry',
+      desc: 'People and accounts behind this treasury',
       items: [
         { label: 'Wallets',  href: `/${university}/wallets` },
         { label: 'Members',  href: `/${university}/members` },
@@ -62,9 +65,12 @@ export default function DesktopSidebar({ university, isAuthorized = false }: { u
         {groups.map((group, gi) => (
           <div key={gi} className="mb-2">
             {group.title && (
-              <p className="font-data text-ghost text-[10px] tracking-widest uppercase px-5 pt-4 pb-1">
-                {group.title}
-              </p>
+              <div className="px-5 pt-4 pb-1">
+                <p className="font-data text-ghost text-[10px] tracking-widest uppercase">{group.title}</p>
+                {group.desc && (
+                  <p className="text-ghost text-[10px] mt-0.5 leading-relaxed">{group.desc}</p>
+                )}
+              </div>
             )}
             {group.items.map(item => (
               <Link key={item.label} href={item.href} className={linkClass(isActive(item))}>
