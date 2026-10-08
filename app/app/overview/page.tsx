@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import DemoBanner from '@/components/DemoBanner'
 import { fetchApprovedUnibenFaculties, DepartmentRequest } from '@/lib/supabase'
 import { fetchTreasury } from '@/lib/queries'
 import { formatUSDC } from '@/lib/anchor'
@@ -74,9 +75,10 @@ export default function OverviewPage() {
       <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
         Aggregate across every approved faculty
       </p>
-      <h1 className="font-display font-bold text-ledger text-3xl tracking-tight mb-8">
+      <h1 className="font-display font-bold text-ledger text-3xl tracking-tight mb-6">
         UNIBEN Faculties Treasury
       </h1>
+      <div className="mb-8"><DemoBanner /></div>
 
       {anyFailed && !loading && (
         <div className="border border-pending bg-paper text-pending text-xs font-data px-4 py-3 mb-6">
