@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useWallet } from '@solana/wallet-adapter-react'
 import RoleBadge from '@/components/RoleBadge'
 import ConnectWallet from '@/components/ConnectWallet'
+import DemoBanner from '@/components/DemoBanner'
 import { fetchTreasury, fetchAllProposals, getLastTreasuryFetchError } from '@/lib/queries'
 import { fetchFacultyBySlug } from '@/lib/supabase'
 import { ADMIN_KEY } from '@/lib/constants'
@@ -58,8 +59,6 @@ export default function TreasuryPage() {
     const p = await fetchAllProposals(t.pda, count)
     setProposals(p)
     setLoading(false)
-    // Real department name if this slug is in the directory; otherwise the
-    // raw slug is shown as-is rather than a dead static lookup.
     const req = await fetchFacultyBySlug(university)
     setFacultyName(req?.department ?? null)
   }
@@ -169,7 +168,11 @@ export default function TreasuryPage() {
             </div>
           </header>
 
-          <section className="px-6 pt-8 pb-6 border-b border-rule flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="px-6 pt-4">
+            <DemoBanner />
+          </div>
+
+          <section className="px-6 pt-6 pb-6 border-b border-rule flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <p className="font-data text-ghost text-xs tracking-widest uppercase mb-2">
                 UNIBEN Faculty Union
@@ -231,6 +234,9 @@ export default function TreasuryPage() {
         <DesktopSidebar university={university} isAuthorized={isAuthorized} />
         <div className="flex-1 flex flex-col">
           <DesktopTopBar universityName={displayName} connected={!!wallet.publicKey} isAdmin={isAdminWallet} isExec={!!isExec} />
+          <div className="px-8 pt-4">
+            <DemoBanner />
+          </div>
           <DesktopTreasuryOverview
             university={university}
             treasury={treasury}
