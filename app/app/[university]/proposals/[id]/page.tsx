@@ -126,6 +126,11 @@ export default function ProposalPage() {
               )
             })}
           </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 pt-4 mt-4 border-t border-rule">
+            <span className="font-data text-[10px] text-ghost"><span className="text-nigerian">●</span> Signed, approves the payment</span>
+            <span className="font-data text-[10px] text-ghost"><span>○</span> Pending, has not voted yet</span>
+            <span className="font-data text-[10px] text-ghost"><span className="text-void">✗</span> Rejected, voted against</span>
+          </div>
         </section>
 
         {treasury && proposalPda && (
