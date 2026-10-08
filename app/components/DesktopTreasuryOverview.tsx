@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { formatUSDC } from '@/lib/anchor'
 import ProposalCard from './ProposalCard'
 import MetricCard from './MetricCard'
+import TermHint from './TermHint'
 
 interface Props {
   university: string
@@ -19,13 +20,21 @@ export default function DesktopTreasuryOverview({
 
   return (
     <div className="flex-1 overflow-y-auto p-8">
-      <div className="grid grid-cols-3 gap-4 mb-8 stagger">
+      <div className="grid grid-cols-3 gap-4 mb-6 stagger">
         <MetricCard label="Available Balance" value={"$" + formatUSDC(treasury.availableBalance)} highlight />
         <MetricCard label="Reserved Balance"  value={"$" + formatUSDC(treasury.reservedBalance)} />
         <MetricCard label="Total Deposited"   value={"$" + formatUSDC(treasury.totalDeposited)} />
         <MetricCard label="Total Spent"       value={"$" + formatUSDC(treasury.totalSpent)} />
         <MetricCard label="Active Proposals"  value={treasury.activeProposalCount?.toString?.() ?? String(treasury.activeProposalCount)} />
         <MetricCard label="Total Proposals"   value={treasury.proposalCount?.toString?.() ?? String(treasury.proposalCount)} />
+      </div>
+
+      <div className="max-w-2xl mb-10">
+        <TermHint>
+          Available is what the union can spend right now. Reserved is money locked behind
+          proposals still collecting signatures. Nothing leaves the vault until{' '}
+          {treasury.threshold || 3} of {treasury.signers?.length || 5} execs sign.
+        </TermHint>
       </div>
 
       <div className="max-w-2xl">
