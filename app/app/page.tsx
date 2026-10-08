@@ -90,8 +90,8 @@ export default function Home() {
             <p
               className="font-display font-bold text-ledger leading-snug tracking-tight text-balance mb-4 text-[clamp(1.5rem,6vw,2rem)]"
             >
-              The first time in Nigerian university history that faculty union
-              finances are permanently public.
+              A public record of faculty union finances
+              that nobody can delete.
             </p>
             <p className="text-body text-sm leading-relaxed max-w-sm">
               Built on Solana. No server to shut down. No admin to delete records.
