@@ -4,10 +4,12 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { fetchTreasury, fetchProposal } from '@/lib/queries'
-import { formatUSDC, abbreviate } from '@/lib/anchor'
+import { formatUSDC, abbreviate, getProposalPDA } from '@/lib/anchor'
 import { CATEGORY_LABELS } from '@/lib/constants'
 import StatusBadge from '@/components/StatusBadge'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+
+const EXPLORER_ADDR = 'https://explorer.solana.com/address'
 
 function fmtTimestamp(ts: any): string {
   const seconds = typeof ts?.toNumber === 'function' ? ts.toNumber() : Number(ts)
@@ -56,6 +58,7 @@ export default function ProposalPage() {
   const status   = Object.keys(proposal.status)[0] as string
   const category = Object.keys(proposal.category)[0] as string
   const signers  = treasury?.signers || []
+  const [proposalPda] = treasury ? getProposalPDA(treasury.pda, parseInt(id)) : [null]
 
   return (
     <main id="main-content" className="min-h-[100dvh] bg-ink">
@@ -124,6 +127,39 @@ export default function ProposalPage() {
             })}
           </div>
         </section>
+
+        {treasury && proposalPda && (
+          <section className="px-6 py-6 border-b border-rule">
+            <p className="font-data text-ghost text-xs tracking-widest uppercase mb-4">Verify on-chain</p>
+            <div className="space-y-3">
+              <a
+                href={`${EXPLORER_ADDR}/${treasury.pda.toString()}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block border border-rule bg-paper p-3 hover:border-ghost transition-colors"
+              >
+                <p className="font-data text-ghost text-[10px] uppercase mb-1">Treasury account</p>
+                <p className="font-data text-uniben text-xs">
+                  {treasury.pda.toString().slice(0, 16)}...{treasury.pda.toString().slice(-8)} ↗
+                </p>
+              </a>
+              <a
+                href={`${EXPLORER_ADDR}/${proposalPda.toString()}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block border border-rule bg-paper p-3 hover:border-ghost transition-colors"
+              >
+                <p className="font-data text-ghost text-[10px] uppercase mb-1">Proposal account</p>
+                <p className="font-data text-uniben text-xs">
+                  {proposalPda.toString().slice(0, 16)}...{proposalPda.toString().slice(-8)} ↗
+                </p>
+              </a>
+            </div>
+            <p className="text-body text-xs mt-3 leading-relaxed">
+              Both accounts are public on Solana devnet. Anyone can audit them without a wallet.
+            </p>
+          </section>
+        )}
 
         <section className="px-6 py-6 pb-28">
           <p className="font-data text-ghost text-xs mb-4">Timeline</p>
