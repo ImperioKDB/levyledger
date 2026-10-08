@@ -9,14 +9,14 @@ export default function FacultyMorePage() {
   const { university } = useParams() as { university: string }
 
   const links = [
-    { label: 'Transactions', href: `/transactions?treasury=${university}` },
-    { label: 'Reports',      href: `/${university}/reports` },
-    { label: 'Signatures',   href: `/${university}/signatures` },
-    { label: 'Wallets',      href: `/${university}/wallets` },
-    { label: 'Members',      href: `/${university}/members` },
-    { label: 'Settings',     href: `/${university}/settings` },
-    { label: 'All faculties',    href: '/universities' },
-    { label: 'About LevyLedger', href: '/about' },
+    { label: 'Transactions', desc: 'Executed spending, one record per payment', href: `/transactions?treasury=${university}` },
+    { label: 'Reports',      desc: 'Spending grouped by category',              href: `/${university}/reports` },
+    { label: 'Signatures',   desc: 'Proposals waiting for exec approval',       href: `/${university}/signatures` },
+    { label: 'Wallets',      desc: 'On-chain accounts that hold the funds',     href: `/${university}/wallets` },
+    { label: 'Members',      desc: 'The 5 registered exec signers',             href: `/${university}/members` },
+    { label: 'Settings',     desc: 'Treasury rules, set at initialization',     href: `/${university}/settings` },
+    { label: 'All faculties',    desc: null, href: '/universities' },
+    { label: 'About LevyLedger', desc: null, href: '/about' },
   ]
 
   return (
@@ -31,9 +31,10 @@ export default function FacultyMorePage() {
           <Link
             key={l.href}
             href={l.href}
-            className="block border-b border-rule py-4 font-data text-ledger text-sm hover:text-uniben active:text-uniben transition-colors"
+            className="block border-b border-rule py-4 hover:bg-lifted active:bg-lifted transition-colors"
           >
-            {l.label} →
+            <p className="font-data text-ledger text-sm">{l.label} →</p>
+            {l.desc && <p className="text-body text-xs mt-0.5">{l.desc}</p>}
           </Link>
         ))}
       </nav>
