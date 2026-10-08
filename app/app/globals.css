@@ -7,7 +7,10 @@
   --paper:    #111111;
   --lifted:   #161616;
   --rule:     #1F1F1F;
-  --ghost:    #71717A;
+  /* Lifted from #71717A. The old value measured about 4.0:1 on --ink,
+     under the WCAG AA floor of 4.5:1 for small text. #8E8E93 clears it
+     while still reading as muted next to --body. */
+  --ghost:    #8E8E93;
   --body:     #A1A1AA;
   --ledger:   #F4F4F5;
   --uniben:   #008751;
